@@ -1,0 +1,751 @@
+import React, { useMemo, useState } from "react";
+import {
+  aospAssets,
+  appFocus,
+  courses,
+  factMeta,
+  figures,
+  initialIvi,
+  quiz,
+  scenarios,
+  sources,
+} from "./data.js";
+
+const tabs = [
+  ["sim", "Simulator"],
+  ["courses", "Courses"],
+  ["assets", "AOSP Assets"],
+  ["files", "File Map"],
+  ["figures", "Figures"],
+  ["sources", "Fact Check"],
+];
+
+const catClass = (cat) => `pill pill--${cat.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+
+function applyPatch(prev, patch) {
+  return { ...prev, ...patch };
+}
+
+export default function App() {
+  const [tab, setTab] = useState("sim");
+  const [ivi, setIvi] = useState(initialIvi);
+  const [selectedId, setSelectedId] = useState(scenarios[0].id);
+  const [applied, setApplied] = useState(new Set());
+  const [scenarioFilter, setScenarioFilter] = useState("ALL");
+  const [figureFilter, setFigureFilter] = useState("ALL");
+  const [quizPick, setQuizPick] = useState({});
+
+  const selected = scenarios.find((item) => item.id === selectedId) ?? scenarios[0];
+  const scenarioCats = ["ALL", ...new Set(scenarios.map((item) => item.cat))];
+  const figureCats = ["ALL", ...new Set(figures.map((item) => item.cat))];
+
+  const shownScenarios = useMemo(
+    () =>
+      scenarioFilter === "ALL"
+        ? scenarios
+        : scenarios.filter((item) => item.cat === scenarioFilter),
+    [scenarioFilter]
+  );
+
+  const shownFigures = useMemo(
+    () =>
+      figureFilter === "ALL"
+        ? figures
+        : figures.filter((item) => item.cat === figureFilter),
+    [figureFilter]
+  );
+
+  const totals = useMemo(() => {
+    return aospAssets.reduce(
+      (acc, item) => {
+        acc.res += item.res;
+        acc.layout += item.layout;
+        acc.drawable += item.drawable;
+        acc.xml += item.xml;
+        acc.source += item.source;
+        return acc;
+      },
+      { res: 0, layout: 0, drawable: 0, xml: 0, source: 0 }
+    );
+  }, []);
+
+  const runScenario = (scenario) => {
+    setSelectedId(scenario.id);
+    setIvi((prev) => applyPatch(prev, scenario.apply));
+    setApplied((prev) => new Set([...prev, scenario.id]));
+  };
+
+  const reset = () => {
+    setIvi(initialIvi);
+    setApplied(new Set());
+    setSelectedId(scenarios[0].id);
+  };
+
+  return (
+    <div className="aaos" style={{ "--accent": ivi.accent }}>
+      <header className="topbar">
+        <button className="brand" onClick={() => setTab("sim")}>
+          <span className="logo">A</span>
+          <span>
+            <b>Try it AAOS</b>
+            <small>Android Automotive study site</small>
+          </span>
+        </button>
+        <nav className="tabs" aria-label="main navigation">
+          {tabs.map(([id, label]) => (
+            <button
+              key={id}
+              className={tab === id ? "tab is-on" : "tab"}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className="top-actions">
+          <span className="count">
+            {applied.size}/{scenarios.length} applied
+          </span>
+          <button className="ghost-btn" onClick={reset}>
+            Reset
+          </button>
+        </div>
+      </header>
+
+      {tab === "sim" && (
+        <Simulator
+          applied={applied}
+          filters={scenarioCats}
+          filter={scenarioFilter}
+          onFilter={setScenarioFilter}
+          scenarios={shownScenarios}
+          selected={selected}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onApply={runScenario}
+          ivi={ivi}
+        />
+      )}
+
+      {tab === "courses" && <Courses />}
+      {tab === "assets" && <Assets totals={totals} />}
+      {tab === "files" && <FileMap />}
+      {tab === "figures" && (
+        <Figures
+          cats={figureCats}
+          filter={figureFilter}
+          figures={shownFigures}
+          onFilter={setFigureFilter}
+          picks={quizPick}
+          onPick={(figId, idx) => setQuizPick((prev) => ({ ...prev, [figId]: idx }))}
+          onRetry={(figId) =>
+            setQuizPick((prev) => {
+              const next = { ...prev };
+              delete next[figId];
+              return next;
+            })
+          }
+        />
+      )}
+      {tab === "sources" && <Sources />}
+    </div>
+  );
+}
+
+function Simulator({
+  applied,
+  filters,
+  filter,
+  onFilter,
+  scenarios: shown,
+  selected,
+  selectedId,
+  onSelect,
+  onApply,
+  ivi,
+}) {
+  return (
+    <main className="sim-grid">
+      <aside className="side side--left">
+        <div className="side-head">
+          <h2>Scenario Cards</h2>
+          <span>{shown.length}</span>
+        </div>
+        <div className="filter-row">
+          {filters.map((item) => (
+            <button
+              key={item}
+              className={filter === item ? "filter is-on" : "filter"}
+              onClick={() => onFilter(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <div className="scenario-list">
+          {shown.map((scenario) => (
+            <article
+              key={scenario.id}
+              className={
+                "scenario " +
+                (selectedId === scenario.id ? "is-selected " : "") +
+                (applied.has(scenario.id) ? "is-applied" : "")
+              }
+              onClick={() => onSelect(scenario.id)}
+            >
+              <div className="scenario-top">
+                <span className={catClass(scenario.cat)}>{scenario.cat}</span>
+                {applied.has(scenario.id) && <span className="done">applied</span>}
+              </div>
+              <h3>{scenario.title}</h3>
+              <p>{scenario.short}</p>
+              <div className="scenario-foot">
+                <small>{scenario.files[0]}</small>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onApply(scenario);
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </aside>
+
+      <section className="stage">
+        <div className="stage-head">
+          <div>
+            <span className="eyebrow">Virtual IVI</span>
+            <h1>XML / VHAL / RROを触ると画面がどう変わるか</h1>
+          </div>
+          <div className="meta-line">
+            <code>app={ivi.app}</code>
+            <code>gear={ivi.gear}</code>
+            <code>speed={ivi.speed}</code>
+            <code>{ivi.accent}</code>
+          </div>
+        </div>
+        <IVI state={ivi} />
+        <div className="learning-strip">
+          <b>このサイトのScope:</b> mobile Android上で本物のCarService/VHALを動かすのではなく、AAOSの上位レイヤーの挙動を再現する教育用Simulator。実機検証はAAOS emulator + ADBへ接続して拡張する。
+        </div>
+      </section>
+
+      <aside className="side side--right">
+        <Bridge scenario={selected} />
+      </aside>
+    </main>
+  );
+}
+
+function IVI({ state }) {
+  const fanBars = Array.from({ length: 7 }, (_, index) => index < state.fan);
+  return (
+    <div className={state.night ? "ivi ivi--night" : "ivi"}>
+      <div className="ivi-status">
+        <div className="user">
+          <span className="avatar">{state.user.includes("11") ? "M" : "D"}</span>
+          <span>{state.user}</span>
+        </div>
+        <div className="chips">
+          <span className={state.moving ? "chip chip--warn" : "chip"}>
+            {state.moving ? `DRIVING ${state.speed} km/h` : "PARKED"}
+          </span>
+          {state.restricted && <span className="chip chip--warn">UX_RESTRICTED</span>}
+          {state.rearCamera && <span className="chip chip--warn">REAR CAM</span>}
+          {state.navDucking && <span className="chip chip--warn">DUCKING</span>}
+        </div>
+        <div className="clock">10:42</div>
+      </div>
+
+      <div className="ivi-main">
+        <section className="pane pane--map">
+          <div className="pane-title">{state.rearCamera ? "EVS Camera" : "Navigation"}</div>
+          {state.rearCamera ? <RearCamera /> : <Map nav={state.navDucking} />}
+        </section>
+
+        <section className="pane pane--media">
+          <div className="pane-title">Media Template</div>
+          <div className="media-card">
+            <div className={state.mediaIcon === "oem" ? "cover cover--oem" : "cover"}>
+              {state.mediaIcon === "oem" ? "OEM" : "♪"}
+            </div>
+            <div className="track">
+              <h3>Drive - Lofi Trio</h3>
+              <p>MediaBrowserService source</p>
+              <div className="progress">
+                <span style={{ width: state.navDucking ? "28%" : "42%" }} />
+              </div>
+              <div className="controls">
+                <button>◀</button>
+                <button className="play">▶</button>
+                <button>▶▶</button>
+                {state.navDucking && <b>ducking -8dB</b>}
+              </div>
+              <div className="sources">
+                <span>Spotify</span>
+                <span>Local</span>
+                <span>BT</span>
+                <span>Radio</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="pane">
+          <div className="pane-title">Cluster</div>
+          <div className="gauges">
+            <Gauge label="Speed" value={state.speed} max={180} unit="km/h" />
+            <Gauge label="Power" value={state.moving ? 38 : 0} max={100} unit="%" />
+          </div>
+          <div className="gears">
+            {["P", "R", "N", "D"].map((gear) => (
+              <span key={gear} className={state.gear === gear ? "is-on" : ""}>
+                {gear}
+              </span>
+            ))}
+            <span className={state.night ? "is-on" : ""}>NIGHT</span>
+          </div>
+          <div className="outside">
+            <span>Outside</span>
+            <b>18C</b>
+          </div>
+        </section>
+      </div>
+
+      <div className="hvac">
+        <div className="temp">
+          <small>DRIVER</small>
+          <b>{state.driverTemp.toFixed(1)}C</b>
+        </div>
+        <div className="fan">
+          <small>FAN</small>
+          <div>
+            {fanBars.map((on, index) => (
+              <span key={index} className={on ? "on" : ""} />
+            ))}
+          </div>
+          <b>{state.fan}</b>
+        </div>
+        <div className="toggles">
+          <span className={state.ac ? "on" : ""}>A/C</span>
+          <span className={state.recirc ? "on" : ""}>RECIRC</span>
+          <span>DEFROST</span>
+        </div>
+        <div className="temp">
+          <small>PASSENGER</small>
+          <b>{state.passengerTemp.toFixed(1)}C</b>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Gauge({ label, value, max, unit }) {
+  const pct = Math.min(1, Math.max(0, value / max));
+  const dash = `${pct * 188} 188`;
+  return (
+    <div className="gauge">
+      <svg viewBox="0 0 100 100">
+        <path d="M18 68a34 34 0 1 1 64 0" pathLength="188" />
+        <path className="gauge-on" d="M18 68a34 34 0 1 1 64 0" pathLength="188" strokeDasharray={dash} />
+      </svg>
+      <div>
+        <small>{label}</small>
+        <b>{value}</b>
+        <em>{unit}</em>
+      </div>
+    </div>
+  );
+}
+
+function Map({ nav }) {
+  return (
+    <div className="map">
+      <svg viewBox="0 0 420 260" preserveAspectRatio="none">
+        <path d="M-20 220 C110 140 130 50 240 20 C315 0 360 40 440 10" />
+        <path d="M-30 60 C70 120 160 120 230 190 C280 240 350 230 450 170" />
+        <circle cx="235" cy="150" r="8" />
+      </svg>
+      {nav && <span className="nav-chip">Turn right in 200m</span>}
+      <div className="eta">
+        <b>12 min</b>
+        <span>8.4 km / expressway</span>
+      </div>
+    </div>
+  );
+}
+
+function RearCamera() {
+  return (
+    <div className="rear">
+      <span>REAR CAMERA / 0.8m</span>
+      <div className="parking-lines" />
+    </div>
+  );
+}
+
+function Bridge({ scenario }) {
+  return (
+    <div className="bridge">
+      <div className="bridge-head">
+        <h2>Code / XML Bridge</h2>
+        <span>emulator-5554</span>
+      </div>
+      <section>
+        <span className={catClass(scenario.cat)}>{scenario.cat}</span>
+        <h3>{scenario.title}</h3>
+        <p>{scenario.short}</p>
+        <pre>
+          <code>{scenario.code}</code>
+        </pre>
+      </section>
+      <section>
+        <h3>どのファイルと紐づく？</h3>
+        <ul className="file-list">
+          {scenario.files.map((file) => (
+            <li key={file}>
+              <code>{file}</code>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="note-box">
+        <h3>AOSP default / 注意</h3>
+        <p>{scenario.note}</p>
+      </section>
+    </div>
+  );
+}
+
+function Courses() {
+  return (
+    <main className="page">
+      <PageHero
+        kicker="3 Courses"
+        title="初級・中級・上級を分けて、1週間では終わらない量にする"
+        text="全部を一気に読ませるのではなく、まず画面で直感、次にsource linkage、最後にOEM integration判断へ進む構成。"
+      />
+      <div className="course-grid">
+        {courses.map((course) => (
+          <article key={course.id} className="course-card">
+            <div className="course-head">
+              <span className={`course-badge course-badge--${course.id}`}>{course.label}</span>
+              <code>{course.duration}</code>
+            </div>
+            <h2>{course.title}</h2>
+            <p>{course.goal}</p>
+            <ol>
+              {course.lessons.map((lesson) => (
+                <li key={lesson}>{lesson}</li>
+              ))}
+            </ol>
+          </article>
+        ))}
+      </div>
+      <section className="wide-card">
+        <h2>チーム展開向けの使い方</h2>
+        <div className="split">
+          <p>
+            朝会や勉強会では、左のScenarioを1つ選んで「どのXML/Manager/propertyに効くか」を口頭で説明する。個人学習ではFiguresで図を眺め、AOSP Assetsで読むべき標準アプリを選ぶ。
+          </p>
+          <ul>
+            <li>初回: Beginnerの図を見ながらSimulatorだけ触る</li>
+            <li>2回目: Car Settings / Media / SystemUIのfile linkageを読む</li>
+            <li>3回目: 自社IVIならApp/RRO/Service/VHALのどこを変えるか議論</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Assets({ totals }) {
+  return (
+    <main className="page">
+      <PageHero
+        kicker="AOSP standard assets"
+        title="まずAOSP標準assetを使い倒す"
+        text="標準アプリは単なるサンプルではなく、XML・drawable・Controller・permission・build定義の教材。実測値を見て、どのrepoから読むか決める。"
+      />
+      <div className="stat-row">
+        <Stat label="res files" value={totals.res} />
+        <Stat label="layout" value={totals.layout} />
+        <Stat label="drawable" value={totals.drawable} />
+        <Stat label="xml" value={totals.xml} />
+        <Stat label="source" value={totals.source} />
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Repo</th>
+              <th>Role</th>
+              <th>res</th>
+              <th>layout</th>
+              <th>drawable</th>
+              <th>xml</th>
+              <th>source</th>
+              <th>HEAD</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aospAssets.map((item) => (
+              <tr key={item.repo}>
+                <td>
+                  <a href={`https://android.googlesource.com/platform/packages/apps/Car/${item.repo}/`} target="_blank" rel="noreferrer">
+                    {item.repo}
+                  </a>
+                </td>
+                <td>{item.role}</td>
+                <td>{item.res}</td>
+                <td>{item.layout}</td>
+                <td>{item.drawable}</td>
+                <td>{item.xml}</td>
+                <td>{item.source}</td>
+                <td>
+                  <code>{item.head}</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="footnote">{factMeta.branchNote}</p>
+    </main>
+  );
+}
+
+function FileMap() {
+  return (
+    <main className="page">
+      <PageHero
+        kicker="File linkage"
+        title="どのファイルがどこと紐づくか"
+        text="Android projectはActivityだけ追うと迷子になる。AAOSはXML resource, Manager API, Car Service, VHAL, permission allowlistをセットで読む。"
+      />
+      <div className="focus-grid">
+        {appFocus.map((item) => (
+          <article key={item.app} className="focus-card">
+            <h2>{item.app}</h2>
+            <p>{item.why}</p>
+            <div className="default-box">
+              <b>AOSP default</b>
+              <span>{item.defaultBehavior}</span>
+            </div>
+            <ul>
+              {item.linkage.map((link) => (
+                <li key={link}>
+                  <code>{link}</code>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+      <section className="wide-card">
+        <h2>読み順のおすすめ</h2>
+        <div className="flowline">
+          <span>AndroidManifest.xml</span>
+          <b />
+          <span>res/xml or res/layout</span>
+          <b />
+          <span>Controller / Activity</span>
+          <b />
+          <span>Manager API</span>
+          <b />
+          <span>Car Service / VHAL</span>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Figures({ cats, filter, figures: shown, onFilter, picks, onPick, onRetry }) {
+  return (
+    <main className="page page--figures">
+      <PageHero
+        kicker="Visual guide"
+        title="図解で先に頭へ入れる"
+        text="初級コースでも使えるように、抽象概念を小さなSVGで大量に並べた。カードごとに1つだけ覚えればよい。"
+      />
+      <div className="filter-row filter-row--page">
+        {cats.map((cat) => (
+          <button key={cat} className={filter === cat ? "filter is-on" : "filter"} onClick={() => onFilter(cat)}>
+            {cat}
+          </button>
+        ))}
+      </div>
+      <div className="figure-grid">
+        {shown.map((figure) => (
+          <FigureCard
+            key={figure.id}
+            figure={figure}
+            pick={picks[figure.id]}
+            onPick={(idx) => onPick(figure.id, idx)}
+            onRetry={() => onRetry(figure.id)}
+          />
+        ))}
+      </div>
+    </main>
+  );
+}
+
+function FigureCard({ figure, pick, onPick, onRetry }) {
+  const q = quiz[figure.id];
+  return (
+    <article className="figure-card">
+      <header>
+        <span>{String(figures.findIndex((item) => item.id === figure.id) + 1).padStart(2, "0")}</span>
+        <h3>{figure.title}</h3>
+        <span className={catClass(figure.cat)}>{figure.cat}</span>
+      </header>
+      <FigureSvg kind={figure.kind} />
+      <p>{figure.text}</p>
+      {q && (
+        <div className="quiz">
+          <b>Q. {q.q}</b>
+          <div>
+            {q.c.map((choice, idx) => {
+              const picked = pick === idx;
+              const correct = q.a === idx;
+              const showAnswer = pick !== undefined && correct;
+              return (
+                <button
+                  key={choice}
+                  className={
+                    (picked && correct ? "is-correct " : "") +
+                    (picked && !correct ? "is-wrong " : "") +
+                    (showAnswer ? "is-answer" : "")
+                  }
+                  disabled={pick !== undefined && correct}
+                  onClick={() => onPick(idx)}
+                >
+                  {choice}
+                </button>
+              );
+            })}
+          </div>
+          {pick !== undefined && (
+            <small className={pick === q.a ? "ok" : "ng"}>
+              {pick === q.a ? "Correct. このまま次へ。" : "Not quite. 正解を確認してRetry。"}
+              {pick !== q.a && <button onClick={onRetry}>Retry</button>}
+            </small>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function FigureSvg({ kind }) {
+  const labels = {
+    stack: ["App", "Car API", "Car Service", "VHAL", "ECU"],
+    grid: ["Launcher", "SystemUI", "Settings", "Media", "Dialer", "HVAC"],
+    pipe: ["ECU", "VHAL", "CarService", "Manager", "UI"],
+    binder: ["App process", "Binder", "Car Service"],
+    files: ["XML", "Controller", "Manager"],
+    layers: ["Dialog", "Overlay", "SystemUI", "Activity", "Wallpaper"],
+    media: ["Launcher", "MediaBrowserService", "Media Template"],
+    gate: ["Manifest", "Privileged", "Allowlist"],
+    state: ["Parked", "Driving", "Restricted"],
+    audio: ["Media", "NAV", "Ducking"],
+    displays: ["Driver", "Passenger", "Rear"],
+    pyramid: ["Reuse", "Overlay", "Extend", "Fork"],
+    package: ["Source", "Prebuilt", "System image"],
+    oem: ["AOSP", "OEM UI", "Brand"],
+    terminal: ["Web", "ADB", "Emulator"],
+    timeline: ["Day1", "Day3", "Day7+"],
+    seats: ["Driver", "Passenger", "Rear L", "Rear R"],
+  };
+  const list = labels[kind] ?? labels.pipe;
+  return (
+    <svg className="fig-svg" viewBox="0 0 360 190" role="img" aria-label={kind}>
+      <defs>
+        <linearGradient id={`g-${kind}`} x1="0" x2="1">
+          <stop stopColor="var(--accent)" />
+          <stop offset="1" stopColor="#7bb7ff" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="358" height="188" rx="16" />
+      {kind === "stack" || kind === "layers" ? (
+        list.map((label, index) => (
+          <g key={label}>
+            <rect x={34 + index * 18} y={28 + index * 24} width="230" height="28" rx="8" />
+            <text x={48 + index * 18} y={47 + index * 24}>{label}</text>
+          </g>
+        ))
+      ) : (
+        list.map((label, index) => {
+          const x = 24 + (index % 3) * 108;
+          const y = 34 + Math.floor(index / 3) * 62;
+          return (
+            <g key={label}>
+              <rect x={x} y={y} width="92" height="40" rx="10" />
+              <text x={x + 46} y={y + 25} textAnchor="middle">{label}</text>
+              {index < list.length - 1 && index % 3 !== 2 && <path d={`M${x + 92} ${y + 20} L${x + 108} ${y + 20}`} />}
+            </g>
+          );
+        })
+      )}
+      {kind === "seats" && (
+        <path className="accent-path" d="M80 145h200M120 118v54M240 118v54" />
+      )}
+      {kind === "audio" && <circle className="accent-dot" cx="250" cy="54" r="16" />}
+      {kind === "timeline" && <path className="accent-path" d="M55 144h250" />}
+    </svg>
+  );
+}
+
+function Sources() {
+  return (
+    <main className="page">
+      <PageHero
+        kicker="Fact checked"
+        title="記載の根拠と注意点"
+        text={`Checked: ${factMeta.checkedAt}. 変わりやすい仕様は公式docsとAOSP sourceを優先。`}
+      />
+      <section className="wide-card">
+        <h2>間違えやすい前提</h2>
+        <ul className="check-list">
+          <li>スマホAndroidアプリ単体では本物のAAOS CarService/VHALは動かない。このサイトは教育用Simulator。</li>
+          <li>Android 13+ のVHALはAIDLが中心。Android 12以前はHIDL。</li>
+          <li>RROはresource/XML差し替え。behavior変更はCar UI pluginやsource変更を検討。</li>
+          <li>CarPropertyManagerの多くはpermissionが必要。Privileged appやplatform signatureが絡む。</li>
+          <li>Android 13+ platform buildではunbundled appsのsourceを直接含めず、prebuilt APK統合の説明がある。</li>
+          <li>公式のAOSP取得手順では android-latest-release manifest の利用が説明されている。branch名は固定で覚えず都度確認する。</li>
+        </ul>
+      </section>
+      <div className="source-grid">
+        {sources.map((source) => (
+          <a key={source.url} className="source-card" href={source.url} target="_blank" rel="noreferrer">
+            <b>{source.label}</b>
+            <span>{source.note}</span>
+          </a>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+function PageHero({ kicker, title, text }) {
+  return (
+    <section className="page-hero">
+      <span className="eyebrow">{kicker}</span>
+      <h1>{title}</h1>
+      <p>{text}</p>
+    </section>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="stat">
+      <b>{value.toLocaleString()}</b>
+      <span>{label}</span>
+    </div>
+  );
+}
