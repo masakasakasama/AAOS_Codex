@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   aospAssets,
   appFocus,
-  courses,
   factMeta,
   figures,
   initialIvi,
@@ -10,6 +9,13 @@ import {
   scenarios,
   sources,
 } from "./data.js";
+import {
+  apiCatalog,
+  architectureLayers,
+  assetStrategy,
+  curriculum,
+  glossary,
+} from "./curriculum.js";
 
 const tabs = [
   ["sim", "Simulator"],
@@ -30,6 +36,10 @@ export default function App() {
   const [tab, setTab] = useState("sim");
   const [ivi, setIvi] = useState(initialIvi);
   const [selectedId, setSelectedId] = useState(scenarios[0].id);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab]);
   const [applied, setApplied] = useState(new Set());
   const [scenarioFilter, setScenarioFilter] = useState("ALL");
   const [figureFilter, setFigureFilter] = useState("ALL");
@@ -81,6 +91,13 @@ export default function App() {
     setSelectedId(scenarios[0].id);
   };
 
+  const tryFromLesson = (scenarioId) => {
+    const scenario = scenarios.find((item) => item.id === scenarioId);
+    if (!scenario) return;
+    setTab("sim");
+    runScenario(scenario);
+  };
+
   return (
     <div className="aaos" style={{ "--accent": ivi.accent }}>
       <header className="topbar">
@@ -127,7 +144,7 @@ export default function App() {
         />
       )}
 
-      {tab === "courses" && <Courses />}
+      {tab === "courses" && <Courses onTry={tryFromLesson} />}
       {tab === "assets" && <Assets totals={totals} />}
       {tab === "files" && <FileMap />}
       {tab === "figures" && (
@@ -421,43 +438,131 @@ function Bridge({ scenario }) {
   );
 }
 
-function Courses() {
+function Courses({ onTry }) {
+  const [courseId, setCourseId] = useState(curriculum[0].id);
+  const [lessonId, setLessonId] = useState(curriculum[0].modules[0].lessons[0].id);
+  const course = curriculum.find((item) => item.id === courseId) ?? curriculum[0];
+  const lessons = course.modules.flatMap((module) => module.lessons);
+  const selectedLesson = lessons.find((item) => item.id === lessonId) ?? lessons[0];
+
+  const changeCourse = (nextCourse) => {
+    setCourseId(nextCourse.id);
+    setLessonId(nextCourse.modules[0].lessons[0].id);
+  };
+
   return (
     <main className="page">
       <PageHero
-        kicker="3 Courses"
-        title="初級・中級・上級を分けて、1週間では終わらない量にする"
-        text="全部を一気に読ませるのではなく、まず画面で直感、次にsource linkage、最後にOEM integration判断へ進む構成。"
+        kicker="Structured curriculum"
+        title="画面で理解し、fileを追い、設計判断まで進む"
+        text="以前の37レッスンを整理し、重複していた導入説明を統合。初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
       />
-      <div className="course-grid">
-        {courses.map((course) => (
-          <article key={course.id} className="course-card">
+      <div className="course-selector">
+        {curriculum.map((item) => (
+          <button
+            key={item.id}
+            className={course.id === item.id ? "course-card is-active" : "course-card"}
+            onClick={() => changeCourse(item)}
+          >
             <div className="course-head">
-              <span className={`course-badge course-badge--${course.id}`}>{course.label}</span>
-              <code>{course.duration}</code>
+              <span className={`course-badge course-badge--${item.id}`}>{item.label}</span>
+              <code>{item.duration}</code>
             </div>
-            <h2>{course.title}</h2>
-            <p>{course.goal}</p>
-            <ol>
-              {course.lessons.map((lesson) => (
-                <li key={lesson}>{lesson}</li>
-              ))}
-            </ol>
-          </article>
+            <h2>{item.title}</h2>
+            <p>{item.goal}</p>
+          </button>
         ))}
       </div>
-      <section className="wide-card">
-        <h2>チーム展開向けの使い方</h2>
-        <div className="split">
-          <p>
-            朝会や勉強会では、左のScenarioを1つ選んで「どのXML/Manager/propertyに効くか」を口頭で説明する。個人学習ではFiguresで図を眺め、AOSP Assetsで読むべき標準アプリを選ぶ。
-          </p>
-          <ul>
-            <li>初回: Beginnerの図を見ながらSimulatorだけ触る</li>
-            <li>2回目: Car Settings / Media / SystemUIのfile linkageを読む</li>
-            <li>3回目: 自社IVIならApp/RRO/Service/VHALのどこを変えるか議論</li>
-          </ul>
-        </div>
+      <section className="curriculum-shell">
+        <aside className="lesson-nav">
+          <div className="lesson-nav__goal">
+            <span className={`course-badge course-badge--${course.id}`}>{course.label}</span>
+            <p>{course.goal}</p>
+          </div>
+          {course.modules.map((module) => (
+            <div className="lesson-module" key={module.title}>
+              <h3>{module.title}</h3>
+              {module.lessons.map((item) => (
+                <button
+                  key={item.id}
+                  className={selectedLesson.id === item.id ? "lesson-link is-active" : "lesson-link"}
+                  onClick={() => setLessonId(item.id)}
+                >
+                  <code>{item.id}</code>
+                  <span>{item.title}</span>
+                  <small>{item.minutes}m</small>
+                </button>
+              ))}
+            </div>
+          ))}
+        </aside>
+        <article className="lesson-reader">
+          <div className="lesson-title">
+            <span className="eyebrow">
+              {course.label} / {selectedLesson.id} / {selectedLesson.minutes} min
+            </span>
+            <h2>{selectedLesson.title}</h2>
+            <p>{selectedLesson.summary}</p>
+          </div>
+          <div className="lesson-content">
+            {selectedLesson.figure && (
+              <div className="lesson-figure">
+                <FigureSvg kind={selectedLesson.figure} />
+                <small>概念図: {selectedLesson.title}</small>
+              </div>
+            )}
+            <section className="lesson-points">
+              <h3>このlessonで押さえること</h3>
+              <ul>
+                {selectedLesson.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+              {selectedLesson.terms && (
+                <div className="term-row">
+                  {selectedLesson.terms.map((term) => (
+                    <code key={term}>{term}</code>
+                  ))}
+                </div>
+              )}
+              {selectedLesson.tryId && (
+                <button className="primary-btn" onClick={() => onTry(selectedLesson.tryId)}>
+                  Simulatorで試す
+                </button>
+              )}
+            </section>
+          </div>
+          {selectedLesson.code && (
+            <section className="reader-panel">
+              <h3>Code / XML</h3>
+              <pre>
+                <code>{selectedLesson.code}</code>
+              </pre>
+            </section>
+          )}
+          {selectedLesson.files && (
+            <section className="reader-panel">
+              <h3>File linkage</h3>
+              <div className="linkage-list">
+                {selectedLesson.files.map(([from, to, note]) => (
+                  <div key={from}>
+                    <code>{from}</code>
+                    <span>to</span>
+                    <code>{to}</code>
+                    <small>{note}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {selectedLesson.quiz && (
+            <details className="reader-quiz">
+              <summary>確認クイズ: {selectedLesson.quiz.q}</summary>
+              <b>{selectedLesson.quiz.answer}</b>
+              <p>{selectedLesson.quiz.explanation}</p>
+            </details>
+          )}
+        </article>
       </section>
     </main>
   );
@@ -477,6 +582,15 @@ function Assets({ totals }) {
         <Stat label="drawable" value={totals.drawable} />
         <Stat label="xml" value={totals.xml} />
         <Stat label="source" value={totals.source} />
+      </div>
+      <div className="strategy-grid">
+        {assetStrategy.map((item) => (
+          <article key={item.group} className="strategy-card">
+            <span className="eyebrow">{item.group}</span>
+            <h2>{item.apps}</h2>
+            <p>{item.reason}</p>
+          </article>
+        ))}
       </div>
       <div className="table-wrap">
         <table>
@@ -520,6 +634,7 @@ function Assets({ totals }) {
 }
 
 function FileMap() {
+  const [view, setView] = useState("apps");
   return (
     <main className="page">
       <PageHero
@@ -527,40 +642,110 @@ function FileMap() {
         title="どのファイルがどこと紐づくか"
         text="Android projectはActivityだけ追うと迷子になる。AAOSはXML resource, Manager API, Car Service, VHAL, permission allowlistをセットで読む。"
       />
-      <div className="focus-grid">
-        {appFocus.map((item) => (
-          <article key={item.app} className="focus-card">
-            <h2>{item.app}</h2>
-            <p>{item.why}</p>
-            <div className="default-box">
-              <b>AOSP default</b>
-              <span>{item.defaultBehavior}</span>
-            </div>
-            <ul>
-              {item.linkage.map((link) => (
-                <li key={link}>
-                  <code>{link}</code>
-                </li>
-              ))}
-            </ul>
-          </article>
+      <div className="filter-row filter-row--page">
+        {[
+          ["apps", "Standard apps"],
+          ["layers", "Architecture"],
+          ["api", "Car API catalog"],
+          ["words", "Glossary"],
+        ].map(([id, label]) => (
+          <button key={id} className={view === id ? "filter is-on" : "filter"} onClick={() => setView(id)}>
+            {label}
+          </button>
         ))}
       </div>
-      <section className="wide-card">
-        <h2>読み順のおすすめ</h2>
-        <div className="flowline">
-          <span>AndroidManifest.xml</span>
-          <b />
-          <span>res/xml or res/layout</span>
-          <b />
-          <span>Controller / Activity</span>
-          <b />
-          <span>Manager API</span>
-          <b />
-          <span>Car Service / VHAL</span>
+      {view === "apps" && (
+        <>
+          <div className="focus-grid">
+            {appFocus.map((item) => (
+              <article key={item.app} className="focus-card">
+                <h2>{item.app}</h2>
+                <p>{item.why}</p>
+                <div className="default-box">
+                  <b>AOSP default</b>
+                  <span>{item.defaultBehavior}</span>
+                </div>
+                <ul>
+                  {item.linkage.map((link) => (
+                    <li key={link}>
+                      <code>{link}</code>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+          <ReadOrder />
+        </>
+      )}
+      {view === "layers" && (
+        <div className="layer-map">
+          {architectureLayers.map((item) => (
+            <article key={item.layer} className="layer-row">
+              <h2>{item.layer}</h2>
+              <p>{item.role}</p>
+              <code>{item.elements}</code>
+              {item.paths.map((path) => (
+                <small key={path}>{path}</small>
+              ))}
+              <b>{item.question}</b>
+            </article>
+          ))}
         </div>
-      </section>
+      )}
+      {view === "api" && (
+        <div className="api-grid">
+          {apiCatalog.map((item) => (
+            <article key={item.title} className="api-card">
+              <span className="eyebrow">{item.access}</span>
+              <h2>{item.title}</h2>
+              <code className="api-name">{item.property}</code>
+              <p>{item.detail}</p>
+              <pre>
+                <code>{item.code}</code>
+              </pre>
+              <div className="flowline flowline--small">
+                {item.chain.map((node, index) => (
+                  <React.Fragment key={node}>
+                    <span>{node}</span>
+                    {index < item.chain.length - 1 && <b />}
+                  </React.Fragment>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      {view === "words" && (
+        <div className="glossary-grid">
+          {glossary.map(([word, definition]) => (
+            <article key={word} className="source-card">
+              <b>{word}</b>
+              <span>{definition}</span>
+            </article>
+          ))}
+        </div>
+      )}
     </main>
+  );
+}
+
+function ReadOrder() {
+  return (
+    <section className="wide-card">
+      <h2>標準appを読む順番</h2>
+      <div className="flowline">
+        <span>AndroidManifest.xml</span>
+        <b />
+        <span>res/xml or res/layout</span>
+        <b />
+        <span>Controller / Activity</span>
+        <b />
+        <span>Manager API</span>
+        <b />
+        <span>Car Service / VHAL</span>
+      </div>
+    </section>
   );
 }
 
@@ -643,7 +828,9 @@ function FigureCard({ figure, pick, onPick, onRetry }) {
 
 function FigureSvg({ kind }) {
   const labels = {
+    boundary: ["Phone app", "Projection", "Car display"],
     stack: ["App", "Car API", "Car Service", "VHAL", "ECU"],
+    network: ["ECU", "Network", "VHAL", "IVI", "Cluster"],
     grid: ["Launcher", "SystemUI", "Settings", "Media", "Dialer", "HVAC"],
     pipe: ["ECU", "VHAL", "CarService", "Manager", "UI"],
     binder: ["App process", "Binder", "Car Service"],
@@ -714,8 +901,11 @@ function Sources() {
           <li>スマホAndroidアプリ単体では本物のAAOS CarService/VHALは動かない。このサイトは教育用Simulator。</li>
           <li>Android 13+ のVHALはAIDLが中心。Android 12以前はHIDL。</li>
           <li>RROはresource/XML差し替え。behavior変更はCar UI pluginやsource変更を検討。</li>
+          <li>画面制御はabsoluteな走行状態より、CarUxRestrictionsManagerが公開するUX restrictionsを監視する。</li>
+          <li>古い教材で見かけるCarPropertyManager.registerCallbackはdeprecated。ここではsubscribePropertyEventsを使用する。</li>
           <li>CarPropertyManagerの多くはpermissionが必要。Privileged appやplatform signatureが絡む。</li>
           <li>Android 13+ platform buildではunbundled appsのsourceを直接含めず、prebuilt APK統合の説明がある。</li>
+          <li>メーカー例は公開情報で確認できるplatform採用とinterfaceの観察に限定し、内部実装を断定しない。</li>
           <li>公式のAOSP取得手順では android-latest-release manifest の利用が説明されている。branch名は固定で覚えず都度確認する。</li>
         </ul>
       </section>

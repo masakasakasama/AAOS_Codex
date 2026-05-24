@@ -46,6 +46,26 @@ export const sources = [
     note: "Dialer / Media / Car UI Library / SMS はunbundled apps。Android 13+ はplatform側にsourceを含めずprebuilt連携。",
   },
   {
+    label: "Consume driving state and UX restrictions",
+    url: "https://source.android.com/docs/automotive/driver_distraction/consume?hl=en",
+    note: "UIはabsoluteなdriving stateではなく、CarUxRestrictionsManagerが公開するrestrictionを監視する。",
+  },
+  {
+    label: "AOSP Garage Mode",
+    url: "https://source.android.com/docs/automotive/power/garage_mode?hl=en",
+    note: "車両停止後にsystemを一時的にawakeに保ち、JobSchedulerのidle jobを実行する仕組み。",
+  },
+  {
+    label: "Multi-Display Communications API",
+    url: "https://source.android.com/docs/automotive/displays/multi-display-comms-api?hl=en",
+    note: "occupant zoneがdisplay群とAndroid userを対応づける公式説明。",
+  },
+  {
+    label: "AOSP Audio focus",
+    url: "https://source.android.com/docs/automotive/audio/audio-focus?hl=en",
+    note: "AAOSでのaudio focus interactionやzone単位の扱いを確認する入口。",
+  },
+  {
     label: "Download the Android source",
     url: "https://source.android.com/docs/setup/download?hl=en",
     note: "AOSPをsyncする公式手順。android-latest-release manifestの利用を説明。",
@@ -53,7 +73,7 @@ export const sources = [
   {
     label: "CarPropertyManager API",
     url: "https://developer.android.com/reference/android/car/hardware/property/CarPropertyManager",
-    note: "Vehicle specific propertiesへのアプリ向けinterface。",
+    note: "Vehicle specific propertiesへのアプリ向けinterface。registerCallbackはdeprecatedで、subscribePropertyEventsを使う。",
   },
   {
     label: "android.car.Car API",
@@ -62,8 +82,8 @@ export const sources = [
   },
   {
     label: "Polestar 3 technology",
-    url: "https://www.polestar.com/global/polestar-3/technology/",
-    note: "メーカー例: AAOS + OEM独自interface + Google built-in。",
+    url: "https://www.polestar.com/us/polestar-3/technology/",
+    note: "メーカー例: Android Automotive OS + Google built-inを掲げる公開車種のinterface観察。",
   },
 ];
 
@@ -288,9 +308,9 @@ GEAR_SELECTION(REVERSE)
       "Foreground/background user handling",
     ],
     code: `// Conceptual
-occupant zone -> display -> Android user
-driver display: user 0
-passenger display: user 11`,
+occupant zone -> display(s) -> Android user
+driver zone: driver user
+passenger zone: passenger user`,
     note:
       "IVI全体を1ユーザー1画面で固定して考えると、後席displayやpassenger appの理解で詰まりやすい。",
   },
@@ -312,65 +332,6 @@ passenger display: user 11`,
 )`,
     note:
       "CarPropertyManagerの古いregisterCallbackはdeprecated。新しい教材ではsubscribePropertyEvents中心に覚える。",
-  },
-];
-
-export const courses = [
-  {
-    id: "beginner",
-    label: "初級",
-    title: "まず画面で理解するAAOS",
-    duration: "8-12h",
-    goal: "AAOSをスマホAndroidの延長ではなく、車両propertyとSystem UIを持つIVI platformとして捉える。",
-    lessons: [
-      "Android AutoとAAOSの違い: phone projectionではなく車載OS",
-      "IVI画面の構成: Launcher / SystemUI / Media / Settings / HVAC",
-      "VHALの超入門: property, areaId, status, timestamp",
-      "CarPropertyManager: get / set / subscribe の読み方",
-      "XML resource: layout, values, drawable, xml の役割",
-      "RRO: resourceを差し替えるだけ、behavior変更ではない",
-      "SystemUI: status bar, nav bar, HVAC strip, overlay window",
-      "UX Restrictions: 走行中に何を止めるべきか",
-      "AOSP標準asset活用: まずLauncher/Settings/SystemUIを読む",
-    ],
-  },
-  {
-    id: "intermediate",
-    label: "中級",
-    title: "アプリレイヤーからCar Serviceへ潜る",
-    duration: "18-28h",
-    goal: "標準アプリのXMLとManager APIが、Car Service / VHAL / permissionにどうつながるか説明できる。",
-    lessons: [
-      "Car.createCarからManager取得までのBinder境界",
-      "Car SettingsのPreference XMLとPreferenceController",
-      "MediaBrowserServiceとAOSP Media template",
-      "LauncherがMedia sourceをどう扱うか",
-      "Privileged permission, platform certificate, allowlist",
-      "AudioAttributes, CarAudioContext, audio zone, ducking",
-      "Multi-user / occupant zone / display assignment",
-      "RRO targetPackage, overlayable, static vs dynamic RRO",
-      "AOSP source treeの読み方: packages/apps/Car と packages/services/Car",
-      "メーカーUI例: AOSP標準を残す場所、OEM独自にする場所",
-    ],
-  },
-  {
-    id: "advanced",
-    label: "上級",
-    title: "AOSP改修とOEM integrationの入口",
-    duration: "35h+",
-    goal: "AOSP標準assetをベースに、実案件で必要な改修点とリスクを見積もれる。",
-    lessons: [
-      "AIDL VHAL: IVehicle.aidl, property config, versioning",
-      "Car Service lifecycleとManager APIのfailure mode",
-      "SystemUI overlay pathとsource変更の境界",
-      "Car UI Library pluginとRROの使い分け",
-      "Unbundled appsとprebuilt APK integration",
-      "Scalable UI / XML-driven windowingの見取り図",
-      "CTS/CDDを壊しやすいUI変更のパターン",
-      "Emulator / ADB bridgeで学習サイトを実機検証へ伸ばす",
-      "Security boundary: permission, SELinux, signature, HAL",
-      "設計レビュー: どの変更をapp, RRO, framework, VHALへ置くか",
-    ],
   },
 ];
 
@@ -436,31 +397,37 @@ export const appFocus = [
 ];
 
 export const figures = [
-  { id: "f01", cat: "arch", title: "AAOS 5層モデル", kind: "stack", text: "App -> Car API -> Car Service -> VHAL -> ECU。アプリレイヤーを優先しても、下の層の名前は常に見えるようにする。" },
-  { id: "f02", cat: "apps", title: "基本アプリの全体像", kind: "grid", text: "Launcher, SystemUI, Settings, Mediaを中心に読む。Dialer/HVAC/Radioは具体例として効く。" },
-  { id: "f03", cat: "vhal", title: "Propertyの流れ", kind: "pipe", text: "ECUから来た値がVHAL eventになり、Car Service経由でManager callbackに届く。" },
-  { id: "f04", cat: "api", title: "Car.createCar -> Manager", kind: "binder", text: "アプリはCar objectを作り、必要なManagerを取得する。Binder境界の向こうにCar Serviceがいる。" },
-  { id: "f05", cat: "vhal", title: "areaIdの考え方", kind: "seats", text: "同じpropertyでもdriver seat / passenger seat / globalでareaIdが変わる。" },
-  { id: "f06", cat: "rro", title: "RROの3点セット", kind: "files", text: "targetPackage, overlayable, 同名resource。処理変更ではなくresource lookupの差し替え。" },
-  { id: "f07", cat: "systemui", title: "SystemUI Z-stack", kind: "layers", text: "Activityの外側にNavBar, StatusBar, HVAC strip, overlay, dialogが積まれる。" },
-  { id: "f08", cat: "apps", title: "Car Settings XML連携", kind: "files", text: "Preference XMLがController classへつながり、ControllerがManagerやbackendを呼ぶ。" },
-  { id: "f09", cat: "apps", title: "Media source選択", kind: "media", text: "App LauncherはMediaBrowserServiceを見つけ、Media templateへcomponentを渡す。" },
-  { id: "f10", cat: "security", title: "Permission gate", kind: "gate", text: "manifestだけでは足りない。Privileged, allowlist, signatureの境界を見る。" },
-  { id: "f11", cat: "ux", title: "UX Restrictions", kind: "state", text: "走行状態でkeyboard/search/setupなどを止め、DOな操作だけ残す。" },
-  { id: "f12", cat: "audio", title: "Audio zoneとducking", kind: "audio", text: "usageとzoneでnavigation guidanceがMediaをduckする。" },
-  { id: "f13", cat: "user", title: "Multi-user / display", kind: "displays", text: "driverとpassenger displayが別userで動く設計を前提にする。" },
-  { id: "f14", cat: "aosp", title: "AOSP asset活用方針", kind: "pyramid", text: "まず標準assetを読む。変更はApp/RRO/Service/VHALのどこに置くかを決める。" },
-  { id: "f15", cat: "build", title: "Unbundled apps", kind: "package", text: "Dialer/Media/Car UI Library/SMSはunbundled。platform buildではprebuilt連携に注意。" },
-  { id: "f16", cat: "case", title: "Polestar風の見方", kind: "oem", text: "AAOS poweredでもinterfaceはOEM開発。AOSP標準との差分を見る教材にする。" },
-  { id: "f17", cat: "debug", title: "ADB bridge学習", kind: "terminal", text: "学習サイトでは疑似反映。発展形はPCのAAOS emulatorへadbで投げる。" },
-  { id: "f18", cat: "roadmap", title: "1週間では足りない学習量", kind: "timeline", text: "初級で直感、中級でsource読解、上級でintegration判断へ進む。" },
+  { id: "f01", cat: "intro", title: "Android Auto vs AAOS", kind: "boundary", text: "phone projectionと車載OSを最初に分離する。アプリが車側で動きCar APIへ進むのがAAOS。" },
+  { id: "f02", cat: "arch", title: "AAOS 5層モデル", kind: "stack", text: "App -> Car API -> Car Service -> VHAL -> ECU。上位レイヤー中心でも、値の道筋は下まで見えるようにする。" },
+  { id: "f03", cat: "arch", title: "ECU / Network / Display", kind: "network", text: "ECUの値はvehicle networkとVHALを経由し、IVIやClusterの表示へ届く。" },
+  { id: "f04", cat: "apps", title: "基本アプリの全体像", kind: "grid", text: "Launcher, SystemUI, Settings, Mediaを中心に読む。Dialer/HVAC/Radioは具体例として効く。" },
+  { id: "f05", cat: "vhal", title: "Propertyの流れ", kind: "pipe", text: "ECUから来た値がVHAL eventになり、Car Service経由でManager subscriptionに届く。" },
+  { id: "f06", cat: "api", title: "Car.createCar -> Manager", kind: "binder", text: "アプリはCar objectを作り、必要なManagerを取得する。Binder境界の向こうにCar Serviceがいる。" },
+  { id: "f07", cat: "vhal", title: "areaIdとseat zone", kind: "seats", text: "同じpropertyでもdriver seat / passenger seat / GLOBALでareaIdが変わる。" },
+  { id: "f08", cat: "rro", title: "RROの3点セット", kind: "files", text: "targetPackage, overlayable, 同名resource。behaviorではなくresource lookupの差し替え。" },
+  { id: "f09", cat: "systemui", title: "SystemUI Z-stack", kind: "layers", text: "Activityの外側にNavBar, StatusBar, HVAC strip, overlay, dialogが積まれる。" },
+  { id: "f10", cat: "apps", title: "Car Settings XML連携", kind: "files", text: "Preference XMLがController classへつながり、ControllerがManagerやbackendを呼ぶ。" },
+  { id: "f11", cat: "apps", title: "Media source選択", kind: "media", text: "App LauncherはMediaBrowserServiceを見つけ、Media templateへcomponentを渡す。" },
+  { id: "f12", cat: "security", title: "Permission gate", kind: "gate", text: "manifestだけでは足りない。Privileged, allowlist, signatureの境界を見る。" },
+  { id: "f13", cat: "ux", title: "UX Restrictions", kind: "state", text: "走行状態でkeyboard/search/setupなどを止め、DOな操作だけ残す。" },
+  { id: "f14", cat: "audio", title: "Audio zoneとducking", kind: "audio", text: "usageとzoneでnavigation guidanceがMediaをduckする。" },
+  { id: "f15", cat: "user", title: "Multi-user / display", kind: "displays", text: "driverとpassenger displayが別userで動く設計を前提にする。" },
+  { id: "f16", cat: "aosp", title: "AOSP asset活用方針", kind: "pyramid", text: "まず標準assetを読む。変更はApp/RRO/Service/VHALのどこに置くかを決める。" },
+  { id: "f17", cat: "build", title: "Unbundled apps", kind: "package", text: "Dialer/Media/Car UI Library/SMSはunbundled。platform buildではprebuilt連携に注意。" },
+  { id: "f18", cat: "case", title: "OEM interfaceの読み方", kind: "oem", text: "AAOSとGoogle built-inを採用してもinterfaceはOEMの設計対象。差分の置き場所を見る。" },
+  { id: "f19", cat: "debug", title: "ADB bridge学習", kind: "terminal", text: "学習サイトでは疑似反映。発展形はPCのAAOS emulatorへadbで検証する。" },
+  { id: "f20", cat: "power", title: "Power / Garage Mode", kind: "timeline", text: "車両電源stateと、ユーザー不在でmaintenanceを行うwindowを把握する。" },
+  { id: "f21", cat: "build", title: "SourceからProduct imageへ", kind: "package", text: "AppやRROはproduct構成に組み込み、system imageとemulatorで確認する。" },
+  { id: "f22", cat: "roadmap", title: "体系的な学習順序", kind: "timeline", text: "初級で直感、中級でsource読解、上級でintegration判断へ進む。" },
 ];
 
 export const quiz = {
-  f03: { q: "VHALの新規feature定義で現在優先されるinterfaceは？", a: 1, c: ["HIDL", "AIDL", "gRPC"] },
-  f06: { q: "RROで主に変更できるものは？", a: 0, c: ["XML/resource", "Binder protocol", "ECU firmware"] },
-  f08: { q: "Car SettingsでXMLのPreferenceからlogicへ繋ぐ代表は？", a: 2, c: ["Activity alias", "BroadcastReceiver", "PreferenceController"] },
-  f09: { q: "AAOS Media sourceとして見つけられる代表的なserviceは？", a: 0, c: ["MediaBrowserService", "JobService", "VpnService"] },
-  f10: { q: "強いCar permissionでmanifest記述だけでは不足しがちなものは？", a: 1, c: ["drawable", "Privileged allowlist", "font"] },
-  f11: { q: "走行中に優先して止めるべきUIは？", a: 2, c: ["Play/Pause", "volume", "keyboard text input"] },
+  f01: { q: "アプリが車両側のOS上で動くのは？", a: 1, c: ["Android Auto", "AAOS", "Bluetooth Projection"] },
+  f05: { q: "VHALの新規feature定義で現在中心となるinterfaceは？", a: 1, c: ["HIDL", "AIDL", "gRPC"] },
+  f08: { q: "RROで主に変更できるものは？", a: 0, c: ["XML/resource", "Binder protocol", "ECU firmware"] },
+  f10: { q: "Car SettingsでXMLのPreferenceからlogicへ繋ぐ代表は？", a: 2, c: ["Activity alias", "BroadcastReceiver", "PreferenceController"] },
+  f11: { q: "AAOS Media sourceとして見つけられる代表的なserviceは？", a: 0, c: ["MediaBrowserService", "JobService", "VpnService"] },
+  f12: { q: "強いCar permissionでmanifest記述だけでは不足しがちなものは？", a: 1, c: ["drawable", "Privileged allowlist", "font"] },
+  f13: { q: "走行中に優先して止めるべきUIは？", a: 2, c: ["Play/Pause", "volume", "keyboard text input"] },
+  f17: { q: "unbundled app統合で確認する代表物は？", a: 0, c: ["prebuilt APK", "ECU firmware only", "CAN terminator"] },
 };
