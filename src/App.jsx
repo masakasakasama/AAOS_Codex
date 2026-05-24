@@ -444,10 +444,21 @@ function Courses({ onTry }) {
   const course = curriculum.find((item) => item.id === courseId) ?? curriculum[0];
   const lessons = course.modules.flatMap((module) => module.lessons);
   const selectedLesson = lessons.find((item) => item.id === lessonId) ?? lessons[0];
+  const focusReader = () => {
+    window.requestAnimationFrame(() => {
+      document.querySelector(".lesson-reader")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   const changeCourse = (nextCourse) => {
     setCourseId(nextCourse.id);
     setLessonId(nextCourse.modules[0].lessons[0].id);
+    focusReader();
+  };
+
+  const changeLesson = (nextLessonId) => {
+    setLessonId(nextLessonId);
+    focusReader();
   };
 
   return (
@@ -455,7 +466,7 @@ function Courses({ onTry }) {
       <PageHero
         kicker="Structured curriculum"
         title="画面で理解し、fileを追い、設計判断まで進む"
-        text="以前の37レッスンを整理し、重複していた導入説明を統合。初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
+        text="Android未経験者向けの前提7 lessonsから入り、初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
       />
       <div className="course-selector">
         {curriculum.map((item) => (
@@ -486,7 +497,7 @@ function Courses({ onTry }) {
                 <button
                   key={item.id}
                   className={selectedLesson.id === item.id ? "lesson-link is-active" : "lesson-link"}
-                  onClick={() => setLessonId(item.id)}
+                  onClick={() => changeLesson(item.id)}
                 >
                   <code>{item.id}</code>
                   <span>{item.title}</span>
@@ -505,6 +516,7 @@ function Courses({ onTry }) {
             <p>{selectedLesson.summary}</p>
           </div>
           <div className="lesson-content">
+            {selectedLesson.official && <OfficialVisual visual={selectedLesson.official} />}
             {selectedLesson.figure && (
               <div className="lesson-figure">
                 <FigureSvg kind={selectedLesson.figure} />
@@ -565,6 +577,52 @@ function Courses({ onTry }) {
         </article>
       </section>
     </main>
+  );
+}
+
+function OfficialVisual({ visual }) {
+  return (
+    <figure className="official-visual">
+      <div className="official-frame">
+        <img src={`${import.meta.env.BASE_URL}official/${visual.file}`} alt={visual.alt} />
+        {visual.markers.map((marker, index) => (
+          <span
+            key={marker.label}
+            className="official-marker"
+            style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
+            aria-label={`${index + 1}: ${marker.label}`}
+          >
+            {index + 1}
+          </span>
+        ))}
+      </div>
+      <figcaption className="official-caption">
+        <b>{visual.title}</b>
+        <a href={visual.source} target="_blank" rel="noreferrer">
+          {visual.sourceLabel}
+        </a>
+        <small>{visual.versionNote}</small>
+      </figcaption>
+      <div className="official-callouts">
+        {visual.markers.map((marker, index) => (
+          <div key={marker.label}>
+            <b>{index + 1}</b>
+            <span>
+              <strong>{marker.label}</strong>
+              {marker.note}
+            </span>
+          </div>
+        ))}
+      </div>
+      <small className="official-attribution">
+        Portions of this page are reproduced from work created and shared by the Android Open Source Project and used
+        according to terms described in the{" "}
+        <a href="https://developer.android.com/license" target="_blank" rel="noreferrer">
+          Content License
+        </a>
+        . Original source is linked above.
+      </small>
+    </figure>
   );
 }
 
@@ -900,6 +958,7 @@ function Sources() {
         <ul className="check-list">
           <li>スマホAndroidアプリ単体では本物のAAOS CarService/VHALは動かない。このサイトは教育用Simulator。</li>
           <li>Android 13+ のVHALはAIDLが中心。Android 12以前はHIDL。</li>
+          <li>Officialの画面画像が掲載時のAndroid versionを明示していない場合、「最新versionの画面」とは断定しない。Android 14 / 15 / 16差分はrelease docsと対象emulatorで確認する。</li>
           <li>RROはresource/XML差し替え。behavior変更はCar UI pluginやsource変更を検討。</li>
           <li>画面制御はabsoluteな走行状態より、CarUxRestrictionsManagerが公開するUX restrictionsを監視する。</li>
           <li>古い教材で見かけるCarPropertyManager.registerCallbackはdeprecated。ここではsubscribePropertyEventsを使用する。</li>

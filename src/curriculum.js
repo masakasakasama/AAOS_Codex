@@ -7,7 +7,186 @@ const lesson = (id, title, minutes, summary, points, extra = {}) => ({
   ...extra,
 });
 
+const officialVisuals = {
+  aaosHome: {
+    file: "android-automotive-os.png",
+    alt: "Android Automotive OS emulator home screen shown in Android Developers documentation",
+    title: "Official: Android Automotive OS emulator Home screen",
+    source: "https://developer.android.com/training/cars/platforms/automotive-os",
+    sourceLabel: "Android Developers: Android Automotive OS overview / Figure 1",
+    versionNote: "現行Android Developers掲載のOfficial画像。画像内のAndroid versionは公式本文で明示されていないため、versionは断定しない。",
+    markers: [
+      { x: 49, y: 6, label: "Status area", note: "時刻やdriver profileがあるsystem領域。アプリ本文とは分けて読む。" },
+      { x: 17, y: 28, label: "Assistant / card surface", note: "Home上に見えるカード。Launcherや提供serviceとの関係を調べる入口。" },
+      { x: 67, y: 33, label: "Navigation surface", note: "地図アプリが描く主要content領域。SystemUIやHVAC stripとはownershipが異なる。" },
+      { x: 49, y: 94, label: "App entry / system controls", note: "app gridや車載向け常設操作へ到達するbottom領域。" },
+      { x: 13, y: 94, label: "Climate control", note: "温度表示のような車両操作はVehicle property学習と直結する。" },
+    ],
+  },
+  blockedActivity: {
+    file: "activity-blocking-activity.png",
+    alt: "An Android Automotive OS app blocked while driving as shown in Android Developers documentation",
+    title: "Official: UX Restrictionsによるactivity block",
+    source: "https://developer.android.com/training/cars/platforms/automotive-os",
+    sourceLabel: "Android Developers: Android Automotive OS overview / Figure 2",
+    versionNote: "現行Android Developers掲載のOfficial画像。画面例はUX Restrictionsの挙動確認に限定して使う。",
+    markers: [
+      { x: 50, y: 40, label: "Blocked content", note: "Driving Optimizedでないactivityを走行中にsystemが覆う表示。" },
+      { x: 48, y: 6, label: "System status remains", note: "制限中でもsystem領域は残り、アプリ画面だけの判断ではない。" },
+      { x: 14, y: 94, label: "Vehicle controls remain", note: "climateなど必要な常設操作を確保する考え方が見える。" },
+    ],
+  },
+  settingsComponents: {
+    file: "car-settings-components.png",
+    alt: "AOSP Car Settings components architecture diagram",
+    title: "Official: Car Settings component linkage",
+    source: "https://source.android.com/docs/automotive/hmi/car_settings",
+    sourceLabel: "AOSP: Car Settings overview / Figure 1",
+    versionNote: "これはUIの世代を示すscreenではなく、AOSP公式のcomponent linkage diagram。",
+    markers: [
+      { x: 17, y: 25, label: "SettingsFragment", note: "screenがどのXMLを使うかを返す入口。" },
+      { x: 48, y: 52, label: "res/xml", note: "Preferenceとsettings:controllerを宣言するresource。" },
+      { x: 18, y: 88, label: "PreferenceController", note: "Manager/API呼び出しなどのbusiness logicを置く。" },
+      { x: 80, y: 88, label: "Preference", note: "ユーザーに見える設定項目。" },
+    ],
+  },
+};
+
 export const curriculum = [
+  {
+    id: "foundation",
+    label: "前提",
+    title: "Android未経験から入る",
+    duration: "約 105 分 / 7 lessons",
+    goal:
+      "プログラミングやAndroidを知らなくても、画面、file、code、APIという言葉を見失わずにAAOSの入口へ立てるようにする。",
+    modules: [
+      {
+        title: "00. まず迷子にならない",
+        lessons: [
+          lesson(
+            "p1",
+            "アプリ、OS、画面の違い",
+            12,
+            "画面に見えているものを、OS全体と一つのアプリに分けて考えるところから始める。",
+            [
+              "OSはアプリを動かし、permissionや画面切替を管理する土台。",
+              "アプリは特定の目的の画面と処理を持つ。設定、音楽、地図は別のアプリになり得る。",
+              "車ではアプリの周囲にsystem barやclimate操作のような常設領域がある。",
+            ],
+            { figure: "layers", terms: ["OS", "App", "System UI"] }
+          ),
+          lesson(
+            "p2",
+            "file と folder: 何を編集すると何が変わるか",
+            14,
+            "コード学習は『どのfileを触ると画面のどこが変わるか』を結び付ける作業。",
+            [
+              "`res/layout` は画面の部品配置、`res/values` は色や文言などのresourceを持つ。",
+              "`AndroidManifest.xml` はアプリの存在、入口、必要なpermissionを宣言する。",
+              "`src/.../*.kt` は値を読み、押された時に何をするかという動作を書く。",
+            ],
+            {
+              figure: "files",
+              files: [
+                ["res/layout/screen.xml", "見える配置", "buttonやtextの並び"],
+                ["res/values/colors.xml", "見える見た目", "色を一箇所で管理"],
+                ["MainActivity.kt", "操作時の動作", "値を読み画面へ渡す"],
+              ],
+            }
+          ),
+        ],
+      },
+      {
+        title: "01. Androidアプリの最小語彙",
+        lessons: [
+          lesson(
+            "p3",
+            "Activity / Service / Manifest / resource",
+            17,
+            "Androidの説明で必ず出る4語を、車載特有の話へ進む前に固める。",
+            [
+              "`Activity` はユーザーに見えるscreenの入口。",
+              "`Service` は画面の裏で接続や再生などを担えるcomponent。",
+              "`Manifest` はcomponentとpermissionをsystemへ知らせ、`resource` は差し替え可能な見た目を持つ。",
+            ],
+            { figure: "grid", terms: ["Activity", "Service", "Manifest", "resource"] }
+          ),
+          lesson(
+            "p4",
+            "Kotlinの読み方: 変数、関数、callback",
+            16,
+            "全部書けなくても、AAOSのsample codeを読むための最低限の形を掴む。",
+            [
+              "`val` は値に名前を付ける。`fun` は処理のまとまり。",
+              "callbackは『値が変わったらこの処理を呼んで』と登録する仕組み。",
+              "後で車速やHVAC値が変わった瞬間に画面を更新するコードへ繋がる。",
+            ],
+            {
+              figure: "binder",
+              code: `val temperature = 22.0f
+
+fun showTemperature(value: Float) {
+    temperatureText.text = "$value C"
+}
+
+// 値が来たら呼ばれる処理
+val callback = { value: Float -> showTemperature(value) }`,
+            }
+          ),
+          lesson(
+            "p5",
+            "API と permission",
+            14,
+            "APIは他の機能へ依頼する窓口、permissionはその窓口を誰が使えるかの条件。",
+            [
+              "地図や音楽の操作と、空調やドア制御では許される範囲が違う。",
+              "AAOSでは車両値へ触るAPIにpermissionやPrivileged条件が絡む。",
+              "まず『呼びたいAPI』『必要なpermission』『使える配備方式』を分けて読む。",
+            ],
+            { figure: "gate", terms: ["API", "permission", "Privileged"] }
+          ),
+        ],
+      },
+      {
+        title: "02. AAOSへ渡る橋",
+        lessons: [
+          lesson(
+            "p6",
+            "Build / APK / Emulator / ADB",
+            15,
+            "書いた内容が画面に現れるまでの流れを先に知ると、後の実験が単なる呪文にならない。",
+            [
+              "sourceとresourceをbuildすると、実行可能なAPKやsystem imageになる。",
+              "EmulatorはPC上で動く仮想の車載Android。",
+              "ADBはPCからemulatorへ接続してinstallや状態確認を行う道具。",
+            ],
+            { figure: "terminal", terms: ["APK", "Emulator", "ADB"] }
+          ),
+          lesson(
+            "p7",
+            "Android Auto と AAOS: ここから本編へ",
+            17,
+            "Android Autoはphone projection、AAOSは車両側のAndroid。この区別を持って初級へ進む。",
+            [
+              "Phone上のアプリ画面を車へ投影する経路と、車側にアプリをinstallする経路は別。",
+              "AAOSではCar API、Car Service、Vehicle propertyが学習対象に入ってくる。",
+              "次の初級ではOfficial画面の各領域を見て、誰が描いて何と繋がるかを読む。",
+            ],
+            {
+              figure: "boundary",
+              terms: ["Android Auto", "AAOS", "IVI"],
+              quiz: {
+                q: "車両側へアプリをinstallし、車両向けAPIを扱う対象は？",
+                answer: "AAOS",
+                explanation: "Android Autoはphone projection、AAOSは車内で動くAndroid OS。",
+              },
+            }
+          ),
+        ],
+      },
+    ],
+  },
   {
     id: "beginner",
     label: "初級",
@@ -21,21 +200,21 @@ export const curriculum = [
         lessons: [
           lesson(
             "b1",
-            "Android Auto と AAOS の境界",
+            "Official AAOS画面: どの領域を誰が持つか",
             14,
-            "Android Autoはphone projection、AAOSは車両に搭載されアプリが車側で動くOS。この違いが全学習の出発点。",
+            "Android Developersが掲載するAAOS emulator画面を読み、アプリのcontentと車載systemの常設領域を見分ける。",
             [
-              "AAOSはAOSPを基盤にIVI向けcapabilityを持つ。",
-              "本サイトはAAOS stackの挙動を学ぶSimulatorであり、本物のVHAL接続ではない。",
-              "学習の主戦場はアプリ層だが、値の出所としてVHALまで辿れるようにする。",
+              "地図やmedia cardのようなcontentと、status/control stripのようなsystem領域を切り分ける。",
+              "climate表示はVehicle propertyへ繋がる具体的な観察ポイントになる。",
+              "本サイトは挙動を学ぶSimulatorであり、画像は公式docsに公開されたemulator例。",
             ],
             {
-              figure: "boundary",
-              terms: ["AAOS", "Android Auto", "IVI"],
+              official: officialVisuals.aaosHome,
+              terms: ["AAOS", "System UI", "HVAC", "Launcher"],
               quiz: {
-                q: "車側でアプリが実行され、Vehicle propertyにも繋がるのは？",
-                answer: "AAOS",
-                explanation: "Android Autoは基本的にphone projection。AAOSは車載OSそのもの。",
+                q: "温度操作のように、Vehicle propertyの理解へ直結する領域は？",
+                answer: "Climate control / HVAC",
+                explanation: "表示値や設定値をCarPropertyManagerとVHALまで追える代表例。",
               },
             }
           ),
@@ -154,7 +333,7 @@ car.disconnect()`,
               "Play/Pauseなど許容される操作と混同しない。",
               "アプリはrestriction stateを購読してUIを更新する。",
             ],
-            { figure: "state", tryId: "ux-driving", terms: ["DO", "UX Restrictions"] }
+            { official: officialVisuals.blockedActivity, tryId: "ux-driving", terms: ["DO", "UX Restrictions"] }
           ),
           lesson(
             "b8",
@@ -175,6 +354,7 @@ car.disconnect()`,
             "Simulatorで概念を掴んだ後、Automotive emulatorで本物の画面・service・commandを確認する。",
             [
               "Android StudioのAutomotive system imageが実機なしの入口。",
+              "Official screen画像のOS versionが明示されない場合、対象API levelのAutomotive emulatorでappearanceとbehaviorを確認する。",
               "`cmd car_service` のcommand構文はバージョン差があるため、対象buildのhelpで確認する。",
               "SimulatorのCode Bridgeは『何を検証すべきか』のガイドとして使う。",
             ],
@@ -259,7 +439,7 @@ car.disconnect()`,
           lesson("i9", "Car Settings: Preference XML + Controller", 14, "設定画面は静的XMLとbusiness logic controllerを行き来して読む。", [
             "`res/xml` のPreferenceから `settings:controller` を追う。",
             "Manager APIを呼ぶ箇所はController側で探す。",
-          ], { figure: "files", tryId: "settings-controller" }),
+          ], { official: officialVisuals.settingsComponents, tryId: "settings-controller" }),
           lesson("i10", "Media: MediaBrowserServiceとtemplate", 15, "media source appと車向け共通UIを分離して理解する。", [
             "source発見はMediaBrowserServiceのservice宣言が入口。",
             "Media/Launcherの関係をActivityだけで追わない。",

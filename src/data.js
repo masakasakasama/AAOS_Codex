@@ -11,6 +11,21 @@ export const sources = [
     note: "Android 13+ の VHAL は AIDL / IVehicle.aidl。新規property定義はAIDL側。",
   },
   {
+    label: "Android Automotive OS overview",
+    url: "https://developer.android.com/training/cars/platforms/automotive-os",
+    note: "現行Android DevelopersのAAOS画面例とUX Restrictions例。掲載画像のAndroid versionは本文で明示されない。",
+  },
+  {
+    label: "Android for Cars releases",
+    url: "https://developer.android.com/training/cars/platforms/releases",
+    note: "Android 14 / 15 / 16でアプリ対応上確認すべき変更を記す公式releaseページ。",
+  },
+  {
+    label: "Android Developers Content License",
+    url: "https://developer.android.com/license",
+    note: "教材内で引用するOfficial画像の再利用条件とattributionの根拠。",
+  },
+  {
     label: "AOSP Car UI library",
     url: "https://source.android.com/docs/automotive/hmi/car_ui?hl=en",
     note: "Car UI library, RRO, overlayable resource の考え方。",
