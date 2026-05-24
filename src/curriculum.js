@@ -74,6 +74,7 @@ export const officialVisuals = {
     title: "Official: Car Settings component linkage",
     source: "https://source.android.com/docs/automotive/hmi/car_settings",
     sourceLabel: "AOSP: Car Settings overview / Figure 1",
+    presentation: "diagram",
     versionNote: "これはUIの世代を示すscreenではなく、AOSP公式のcomponent linkage diagram。",
     markers: [
       { x: 17, y: 25, label: "SettingsFragment", note: "screenがどのXMLを使うかを返す入口。" },
@@ -902,5 +903,119 @@ export const ownershipMatrix = [
     configure: "supported property, area, access, min/max",
     extend: "vendor property / ECU adapter implementation",
     files: "hardware/interfaces/automotive/vehicle/aidl / vendor",
+  },
+];
+
+export const assetPerspectives = [
+  {
+    title: "1. 画面のowner",
+    question: "変えたいものは、どの標準app / System UIが描いているか？",
+    example: "Home cardはLauncher、常設barやHVAC入口はCarSystemUI、設定項目はCar Settings、再生画面はMediaから探す。",
+    source: "AOSPのCarSystemUI / Car Settings / Media docs",
+  },
+  {
+    title: "2. 変更の方法",
+    question: "resource差し替えで済むか、behavior追加が必要か？",
+    example: "accent colorやbar iconはRRO/config候補。新しい設定処理や独自画面遷移はApp sourceを検討する。",
+    source: "System UI overlay / Car Settings theme customization docs",
+  },
+  {
+    title: "3. 安全と操作制限",
+    question: "走行中にも表示・操作してよい機能か？",
+    example: "Media再生controlsはDOを前提に再利用しやすい。一方、長い設定入力はUX Restrictionsの扱いが必要。",
+    source: "AOSP Media / Driver distraction docs",
+  },
+  {
+    title: "4. 車両データ",
+    question: "表示だけか、vehicle propertyへ接続する機能か？",
+    example: "温度色の変更はresource。新しいseat sensor値を表示するならproperty定義、support config、App側表示を確認する。",
+    source: "AOSP VHAL docs",
+  },
+  {
+    title: "5. 更新と保守",
+    question: "AOSP更新を取り込みやすい差分か？",
+    example: "SystemUI sourceを直接変更するよりoverlayに閉じる方が、変更fileを明確に保ちやすいと公式docsが説明する。",
+    source: "AOSP Automotive System UI docs",
+  },
+  {
+    title: "6. 配布形態",
+    question: "platform source内のappか、prebuilt統合のappか？",
+    example: "MediaやDialerなどはAndroid 13+でunbundled apps integrationも確認し、source treeに無いことだけで判断しない。",
+    source: "AOSP unbundled apps integration docs",
+  },
+];
+
+export const assetDecisionCases = [
+  {
+    request: "HomeとSystem barのaccent colorをブランド色へ変えたい",
+    start: "Launcher / CarSystemUIのresource名とoverlay許可範囲を読む",
+    choice: "OEM configure: RRO / resource overlay",
+    benefit: "behaviorを変えず、AOSP更新差分を小さく保ちやすい",
+    avoid: "色変更のためにSystemUI source全体をforkする",
+  },
+  {
+    request: "Car Settingsに車両固有の充電設定を追加したい",
+    start: "Car SettingsのPreference XMLとController構成を読む",
+    choice: "AOSP画面構造を利用し、必要なPreference / Controllerを追加",
+    benefit: "車向けUIとdriver distraction配慮の流儀を流用できる",
+    avoid: "Phone Settingsの画面をそのまま移植する",
+  },
+  {
+    request: "Spotify等のmedia sourceを車向け画面で安全に表示したい",
+    start: "AOSP MediaとMediaBrowserService連携を読む",
+    choice: "AOSP Media template / DO playback UIを基盤にする",
+    benefit: "browse/playbackの共通体験と制限対応を一から作らずに済む",
+    avoid: "走行中操作を考慮しない独自playerを先に作る",
+  },
+  {
+    request: "後席seat sensorという新しい値を表示したい",
+    start: "既存standard propertyに相当値があるか、VHAL側のsupport/configを確認",
+    choice: "必要ならOEM extend: vendor property + App表示",
+    benefit: "既存で表現できない製品機能を扱える",
+    avoid: "UIだけ追加して、値の供給元とsupport設定を後回しにする",
+  },
+];
+
+export const assetTradeoffs = [
+  {
+    approach: "AOSP standardをそのまま利用",
+    fit: "Media playbackや標準Settingsなど、要件と既存機能が近い時",
+    merit: "実装量・検証範囲・更新差分を抑えやすい",
+    cost: "brand体験や独自操作を十分に表現できない場合がある",
+  },
+  {
+    approach: "RRO / configで調整",
+    fit: "色、icon、dimension、bar配置、表示有無の差分",
+    merit: "source forkを避け、OEM差分の場所が見えやすい",
+    cost: "許可されたresource/config以上のbehavior変更はできない",
+  },
+  {
+    approach: "標準appを基に機能追加",
+    fit: "独自Preference、独自Home surface、機能固有flow",
+    merit: "AOSPの構造を使いつつ製品要件を実現できる",
+    cost: "更新追従とtest範囲が増える",
+  },
+  {
+    approach: "Service / VHALまで追加",
+    fit: "標準propertyで表せない車両機能や新しい値",
+    merit: "車両固有機能を正しくAndroidへ公開できる",
+    cost: "Appだけで完結せず、permission/config/検証の範囲が大きい",
+  },
+];
+
+export const oemBenchmarks = [
+  {
+    name: "Polestar 3",
+    publicFact: "Polestar公式は、infotainmentがAndroid Automotive OSで動き、Google built-inを備え、Polestar-developed interfaceを持つと説明している。",
+    observation: "AAOS採用とOEM独自interfaceは両立する公開例。AOSP/Googleの機能基盤を使っても、visible surfaceはブランドとして設計できる。",
+    doNotAssume: "どのAOSP appをfork/RRO/新規実装したかは公開ページだけでは断定しない。",
+    url: "https://www.polestar.com/us/polestar-3/technology/",
+  },
+  {
+    name: "Renault Megane E-Tech / OpenR Link",
+    publicFact: "Renault公式発表は、OpenR LinkがAndroid Automotive OSで動き、Home/Navigation、Music、Phone、Applications、Vehicleの各spaceを上部menu barで移動できると説明している。",
+    observation: "同じAAOS基盤でも、menu構造や画面体験をOEM製品として組み立てられる公開例。",
+    doNotAssume: "内部のLauncher/SystemUI変更方法やRRO利用範囲は公開情報から断定しない。",
+    url: "https://media.renault.com/world-premiere-all-new-renault-megane-e-tech-100-electric-36825?lang=eng",
   },
 ];

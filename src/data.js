@@ -105,6 +105,11 @@ export const sources = [
     url: "https://www.polestar.com/us/polestar-3/technology/",
     note: "メーカー例: Android Automotive OS + Google built-inを掲げる公開車種のinterface観察。",
   },
+  {
+    label: "Renault Megane E-Tech / OpenR Link",
+    url: "https://media.renault.com/world-premiere-all-new-renault-megane-e-tech-100-electric-36825?lang=eng",
+    note: "メーカー例: Renault公式がOpenR LinkをAndroid Automotive OSベースとして説明する公開情報。",
+  },
 ];
 
 export const initialIvi = {

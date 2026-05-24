@@ -12,9 +12,13 @@ import {
 import {
   apiCatalog,
   architectureLayers,
+  assetDecisionCases,
+  assetPerspectives,
+  assetTradeoffs,
   curriculum,
   glossary,
   lessonExamples,
+  oemBenchmarks,
   officialVisuals,
   ownershipMatrix,
 } from "./curriculum.js";
@@ -23,7 +27,6 @@ const tabs = [
   ["sim", "Simulator"],
   ["courses", "Courses"],
   ["assets", "AOSP Assets"],
-  ["files", "File Map"],
   ["figures", "Figures"],
   ["sources", "Fact Check"],
 ];
@@ -148,7 +151,6 @@ export default function App() {
 
       {tab === "courses" && <Courses onTry={tryFromLesson} />}
       {tab === "assets" && <Assets totals={totals} />}
-      {tab === "files" && <FileMap />}
       {tab === "figures" && (
         <Figures
           cats={figureCats}
@@ -461,7 +463,7 @@ function Courses({ onTry }) {
   const selectedLesson = lessons.find((item) => item.id === lessonId) ?? lessons[0];
   const focusReader = () => {
     window.requestAnimationFrame(() => {
-      document.querySelector(".lesson-reader")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelector(".lesson-reader")?.scrollIntoView({ behavior: "auto", block: "start" });
     });
   };
 
@@ -629,7 +631,7 @@ function LessonExample({ example }) {
 
 function OfficialVisual({ visual }) {
   return (
-    <figure className="official-visual">
+    <figure className={`official-visual ${visual.presentation ? `official-visual--${visual.presentation}` : ""}`}>
       <div className="official-frame">
         <img src={`${import.meta.env.BASE_URL}official/${visual.file}`} alt={visual.alt} />
         {visual.markers.map((marker, index) => (
@@ -674,59 +676,80 @@ function OfficialVisual({ visual }) {
 }
 
 function Assets({ totals }) {
+  const [view, setView] = useState("overview");
+  const sections = [
+    ["overview", "まず全体像"],
+    ["decisions", "要求から判断"],
+    ["apps", "標準appsとfile"],
+    ["layers", "layerとAPI"],
+    ["benchmarks", "OEM公開例"],
+  ];
+
   return (
-    <main className="page">
+    <main className="page page--assets">
       <PageHero
-        kicker="AOSP standard assets"
-        title="AOSP standardとOEM差分の置き場所を先に決める"
-        text="まずlayer x ownership mapで変更先を判断し、その後に実測した標準appのasset量から読むrepoを選ぶ。"
+        kicker="AOSP reuse decision guide"
+        title="AOSPを何に使い、どこからOEM差分にするか"
+        text="AOSPは車向けに既に用意されたUI・安全配慮・連携のstarting point。まずstandardを読み、足りない差分だけをresource、App、vehicle dataの順に判断する。"
       />
-      <OwnershipMap />
-      <div className="stat-row">
-        <Stat label="res files" value={totals.res} />
-        <Stat label="layout" value={totals.layout} />
-        <Stat label="drawable" value={totals.drawable} />
-        <Stat label="xml" value={totals.xml} />
-        <Stat label="source" value={totals.source} />
+      <div className="asset-nav" aria-label="AOSP学習セクション">
+        {sections.map(([id, label]) => (
+          <button key={id} className={view === id ? "filter is-on" : "filter"} onClick={() => setView(id)}>
+            {label}
+          </button>
+        ))}
       </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Repo</th>
-              <th>Role</th>
-              <th>res</th>
-              <th>layout</th>
-              <th>drawable</th>
-              <th>xml</th>
-              <th>source</th>
-              <th>HEAD</th>
-            </tr>
-          </thead>
-          <tbody>
-            {aospAssets.map((item) => (
-              <tr key={item.repo}>
-                <td>
-                  <a href={`https://android.googlesource.com/platform/packages/apps/Car/${item.repo}/`} target="_blank" rel="noreferrer">
-                    {item.repo}
-                  </a>
-                </td>
-                <td>{item.role}</td>
-                <td>{item.res}</td>
-                <td>{item.layout}</td>
-                <td>{item.drawable}</td>
-                <td>{item.xml}</td>
-                <td>{item.source}</td>
-                <td>
-                  <code>{item.head}</code>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="footnote">{factMeta.branchNote}</p>
+      {view === "overview" && (
+        <>
+          <AssetPrimer />
+          <OwnershipMap />
+          <AssetPerspectives />
+          <AssetTradeoffs />
+        </>
+      )}
+      {view === "decisions" && <DecisionCases />}
+      {view === "apps" && (
+        <>
+          <AssetInventory totals={totals} />
+          <StandardAppMap />
+          <ReadOrder />
+        </>
+      )}
+      {view === "layers" && <LayerReference />}
+      {view === "benchmarks" && <OemBenchmarks />}
     </main>
+  );
+}
+
+function AssetPrimer() {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">最初に決めること</span>
+        <h2>見た目、機能、車両値を混ぜずに考える</h2>
+        <p>同じIVI画面の変更でも、変更する場所は違う。まず下の3種類に分類すると、読むべき標準assetとOEM差分がつながる。</p>
+      </header>
+      <div className="primer-grid">
+        <article className="primer-card primer-card--aosp">
+          <b>AOSP standardを読む</b>
+          <h3>既にある車向け画面・挙動</h3>
+          <p>例: Media再生、Car Settingsの設定list、System barの基本構造。</p>
+          <small>まずreference appを確認し、作らなくてよい部分を特定する。</small>
+        </article>
+        <article className="primer-card primer-card--rro">
+          <b>OEM configureで変える</b>
+          <h3>ブランド差分・有効化差分</h3>
+          <p>例: accent color、icon、dimension、bar配置、表示する設定項目。</p>
+          <small>RRO / resource / configで収まるなら、標準behaviorは保つ。</small>
+        </article>
+        <article className="primer-card primer-card--oem">
+          <b>OEM extendで追加する</b>
+          <h3>標準にない機能・値</h3>
+          <p>例: 独自充電flow、新しいseat sensor表示、vendor property。</p>
+          <small>App処理やService/VHALまで追加が必要かを段階的に判断する。</small>
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -764,100 +787,188 @@ function OwnershipMap() {
   );
 }
 
-function FileMap() {
-  const [view, setView] = useState("apps");
+function AssetPerspectives() {
   return (
-    <main className="page">
-      <PageHero
-        kicker="File linkage"
-        title="どのファイルがどこと紐づくか"
-        text="まず画面で変えたい箇所を決め、XML resourceやActivityを確認する。車両値を読む処理に出会った段階でCarPropertyManager、Car Service、VHALへ進む。"
-      />
-      <div className="filter-row filter-row--page">
-        {[
-          ["apps", "Standard apps"],
-          ["layers", "Architecture"],
-          ["api", "Car API catalog"],
-          ["words", "Glossary"],
-        ].map(([id, label]) => (
-          <button key={id} className={view === id ? "filter is-on" : "filter"} onClick={() => setView(id)}>
-            {label}
-          </button>
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">判断に必要な6観点</span>
+        <h2>Appだけでは決められない理由</h2>
+        <p>画面owner、変更方法、安全、車両データ、更新、配布形態を一順してから、OEM差分を置く場所を選ぶ。</p>
+      </header>
+      <div className="perspective-grid">
+        {assetPerspectives.map((item) => (
+          <article key={item.title} className="perspective-card">
+            <h3>{item.title}</h3>
+            <b>{item.question}</b>
+            <p>{item.example}</p>
+            <small>{item.source}</small>
+          </article>
         ))}
       </div>
-      {view === "apps" && (
-        <>
-          <div className="focus-grid">
-            {appFocus.map((item) => (
-              <article key={item.app} className="focus-card">
-                <h2>{item.app}</h2>
-                <p>{item.why}</p>
-                <div className="default-box">
-                  <b>AOSP default</b>
-                  <span>{item.defaultBehavior}</span>
-                </div>
-                <ul>
-                  {item.linkage.map((link) => (
-                    <li key={link}>
-                      <code>{link}</code>
-                    </li>
-                  ))}
-                </ul>
-              </article>
+    </section>
+  );
+}
+
+function AssetTradeoffs() {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">選択肢のメリット・注意点</span>
+        <h2>差分を深くするほど、自由度と検証範囲が増える</h2>
+      </header>
+      <div className="tradeoff-grid">
+        {assetTradeoffs.map((item) => (
+          <article key={item.approach} className="tradeoff-card">
+            <h3>{item.approach}</h3>
+            <p><b>向く例</b>{item.fit}</p>
+            <p><b>メリット</b>{item.merit}</p>
+            <p><b>注意点</b>{item.cost}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DecisionCases() {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">要求から読む場所を決める</span>
+        <h2>「何を変えたいか」からAOSP/OEM境界を引く</h2>
+        <p>画面ownerを探す、走行中制限を確認する、AOSP standardを再利用できるか見る、足りない最小差分だけ追加する、の順で判断する。</p>
+      </header>
+      <div className="decision-grid">
+        {assetDecisionCases.map((item) => (
+          <article key={item.request} className="decision-card">
+            <h3>{item.request}</h3>
+            <p><b>最初に読む</b>{item.start}</p>
+            <p className="decision-choice"><b>判断</b>{item.choice}</p>
+            <p><b>メリット</b>{item.benefit}</p>
+            <p><b>避けたい進め方</b>{item.avoid}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AssetInventory({ totals }) {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">Standard asset inventory</span>
+        <h2>AOSP標準appのどこに教材が多いか</h2>
+        <p>実測数は読む順番の目安。画面を変えるなら `layout` / `drawable` / `xml` を先に見て、挙動まで必要な時に `source` へ進む。</p>
+      </header>
+      <div className="stat-row">
+        <Stat label="res files" value={totals.res} />
+        <Stat label="layout" value={totals.layout} />
+        <Stat label="drawable" value={totals.drawable} />
+        <Stat label="xml" value={totals.xml} />
+        <Stat label="source" value={totals.source} />
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Repo</th><th>Role</th><th>res</th><th>layout</th><th>drawable</th><th>xml</th><th>source</th><th>HEAD</th></tr>
+          </thead>
+          <tbody>
+            {aospAssets.map((item) => (
+              <tr key={item.repo}>
+                <td><a href={`https://android.googlesource.com/platform/packages/apps/Car/${item.repo}/`} target="_blank" rel="noreferrer">{item.repo}</a></td>
+                <td>{item.role}</td><td>{item.res}</td><td>{item.layout}</td><td>{item.drawable}</td><td>{item.xml}</td><td>{item.source}</td>
+                <td><code>{item.head}</code></td>
+              </tr>
             ))}
-          </div>
-          <ReadOrder />
-        </>
-      )}
-      {view === "layers" && (
+          </tbody>
+        </table>
+      </div>
+      <p className="footnote">{factMeta.branchNote}</p>
+    </section>
+  );
+}
+
+function StandardAppMap() {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">画面からfileへ</span>
+        <h2>標準appのownerとAOSP default</h2>
+      </header>
+      <div className="focus-grid">
+        {appFocus.map((item) => (
+          <article key={item.app} className="focus-card">
+            <h2>{item.app}</h2>
+            <p>{item.why}</p>
+            <div className="default-box"><b>AOSP default</b><span>{item.defaultBehavior}</span></div>
+            <ul>{item.linkage.map((link) => <li key={link}><code>{link}</code></li>)}</ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LayerReference() {
+  return (
+    <>
+      <section className="asset-section">
+        <header className="section-head">
+          <span className="eyebrow">Fileから下位layerへ</span>
+          <h2>APIは画面説明の後、車両値が必要になった時に読む</h2>
+          <p>例: 色変更はresourceで止まる。車速やseat sensorを表示する要求になって初めて、AppからCar API、Car Service、VHALの順に値の出所を追う。</p>
+        </header>
         <div className="layer-map">
           {architectureLayers.map((item) => (
             <article key={item.layer} className="layer-row">
-              <h2>{item.layer}</h2>
-              <p>{item.role}</p>
-              <code>{item.elements}</code>
-              {item.paths.map((path) => (
-                <small key={path}>{path}</small>
-              ))}
-              <b>{item.question}</b>
+              <h2>{item.layer}</h2><p>{item.role}</p><code>{item.elements}</code>
+              {item.paths.map((path) => <small key={path}>{path}</small>)}<b>{item.question}</b>
             </article>
           ))}
         </div>
-      )}
-      {view === "api" && (
+      </section>
+      <section className="asset-section">
+        <header className="section-head"><span className="eyebrow">API concrete examples</span><h2>値を読む・Subscribeする入口</h2></header>
         <div className="api-grid">
           {apiCatalog.map((item) => (
             <article key={item.title} className="api-card">
-              <span className="eyebrow">{item.access}</span>
-              <h2>{item.title}</h2>
-              <code className="api-name">{item.property}</code>
-              <p>{item.detail}</p>
-              <pre>
-                <code>{item.code}</code>
-              </pre>
+              <span className="eyebrow">{item.access}</span><h2>{item.title}</h2><code className="api-name">{item.property}</code>
+              <p>{item.detail}</p><pre><code>{item.code}</code></pre>
               <div className="flowline flowline--small">
-                {item.chain.map((node, index) => (
-                  <React.Fragment key={node}>
-                    <span>{node}</span>
-                    {index < item.chain.length - 1 && <b />}
-                  </React.Fragment>
-                ))}
+                {item.chain.map((node, index) => <React.Fragment key={node}><span>{node}</span>{index < item.chain.length - 1 && <b />}</React.Fragment>)}
               </div>
             </article>
           ))}
         </div>
-      )}
-      {view === "words" && (
-        <div className="glossary-grid">
-          {glossary.map(([word, definition]) => (
-            <article key={word} className="source-card">
-              <b>{word}</b>
-              <span>{definition}</span>
-            </article>
-          ))}
-        </div>
-      )}
-    </main>
+      </section>
+      <div className="glossary-grid">
+        {glossary.map(([word, definition]) => <article key={word} className="source-card"><b>{word}</b><span>{definition}</span></article>)}
+      </div>
+    </>
+  );
+}
+
+function OemBenchmarks() {
+  return (
+    <section className="asset-section">
+      <header className="section-head">
+        <span className="eyebrow">Public OEM benchmarks</span>
+        <h2>同じAAOSでも、製品UIはOEMが設計できる</h2>
+        <p>メーカー自身が公開した情報だけを根拠にする。内部実装が公開されていない `RRO` やforkの有無は断定しない。</p>
+      </header>
+      <div className="benchmark-grid">
+        {oemBenchmarks.map((item) => (
+          <article key={item.name} className="benchmark-card">
+            <h3>{item.name}</h3>
+            <p><b>公開されている事実</b>{item.publicFact}</p>
+            <p><b>教材として読めること</b>{item.observation}</p>
+            <p className="benchmark-caution"><b>断定しないこと</b>{item.doNotAssume}</p>
+            <a href={item.url} target="_blank" rel="noreferrer">Official source</a>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
