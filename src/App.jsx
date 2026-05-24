@@ -14,6 +14,7 @@ import {
   architectureLayers,
   curriculum,
   glossary,
+  lessonExamples,
   officialVisuals,
   ownershipMatrix,
 } from "./curriculum.js";
@@ -453,10 +454,10 @@ function Bridge({ scenario }) {
 }
 
 function Courses({ onTry }) {
-  const [courseId, setCourseId] = useState(curriculum[0].id);
-  const [lessonId, setLessonId] = useState(curriculum[0].modules[0].lessons[0].id);
-  const course = curriculum.find((item) => item.id === courseId) ?? curriculum[0];
-  const lessons = course.modules.flatMap((module) => module.lessons);
+  const [courseId, setCourseId] = useState(null);
+  const [lessonId, setLessonId] = useState(null);
+  const course = curriculum.find((item) => item.id === courseId);
+  const lessons = course ? course.modules.flatMap((module) => module.lessons) : [];
   const selectedLesson = lessons.find((item) => item.id === lessonId) ?? lessons[0];
   const focusReader = () => {
     window.requestAnimationFrame(() => {
@@ -475,28 +476,38 @@ function Courses({ onTry }) {
     focusReader();
   };
 
+  if (!course || !selectedLesson) {
+    return (
+      <main className="page">
+        <PageHero
+          kicker="Structured curriculum"
+          title="画面で理解し、fileを追い、設計判断まで進む"
+          text="前提はAndroid smartphoneの実画面から始め、初級はAAOSの見える領域と操作から始める。未知のAPI名を先に暗記する進め方にはしない。"
+        />
+        <div className="course-selector">
+          {curriculum.map((item) => (
+            <button key={item.id} className="course-card" onClick={() => changeCourse(item)}>
+              <div className="course-head">
+                <span className={`course-badge course-badge--${item.id}`}>{item.label}</span>
+                <code>{item.duration}</code>
+              </div>
+              <h2>{item.title}</h2>
+              <p>{item.goal}</p>
+              <strong className="course-start">このコースを開く</strong>
+            </button>
+          ))}
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="page">
-      <PageHero
-        kicker="Structured curriculum"
-        title="画面で理解し、fileを追い、設計判断まで進む"
-        text="Android smartphoneでSystem UIとAppの境界を読む前提8 lessonsから入り、初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
-      />
-      <div className="course-selector">
-        {curriculum.map((item) => (
-          <button
-            key={item.id}
-            className={course.id === item.id ? "course-card is-active" : "course-card"}
-            onClick={() => changeCourse(item)}
-          >
-            <div className="course-head">
-              <span className={`course-badge course-badge--${item.id}`}>{item.label}</span>
-              <code>{item.duration}</code>
-            </div>
-            <h2>{item.title}</h2>
-            <p>{item.goal}</p>
-          </button>
-        ))}
+    <main className="page page--lesson">
+      <div className="course-workbar">
+        <button className="ghost-btn" onClick={() => setCourseId(null)}>コース一覧へ</button>
+        <span className={`course-badge course-badge--${course.id}`}>{course.label}</span>
+        <strong>{course.title}</strong>
+        <code>{course.duration}</code>
       </div>
       <section className="curriculum-shell">
         <aside className="lesson-nav">
@@ -531,12 +542,7 @@ function Courses({ onTry }) {
           </div>
           <div className="lesson-content">
             {selectedLesson.official && <OfficialVisual visual={selectedLesson.official} />}
-            {selectedLesson.figure && (
-              <div className="lesson-figure">
-                <FigureSvg kind={selectedLesson.figure} />
-                <small>概念図: {selectedLesson.title}</small>
-              </div>
-            )}
+            <LessonExample example={lessonExamples[selectedLesson.id]} />
             <section className="lesson-points">
               <h3>このlessonで押さえること</h3>
               <ul>
@@ -591,6 +597,33 @@ function Courses({ onTry }) {
         </article>
       </section>
     </main>
+  );
+}
+
+function LessonExample({ example }) {
+  if (!example) return null;
+  return (
+    <section className="example-card" aria-label="具体例">
+      <span className="eyebrow">Concrete example</span>
+      <h3>{example.title}</h3>
+      <p>{example.context}</p>
+      <div className="example-steps">
+        <div>
+          <b>1. 操作・要求</b>
+          <span>{example.action}</span>
+        </div>
+        <i>画面で観察</i>
+        <div>
+          <b>2. 見える変化</b>
+          <span>{example.visible}</span>
+        </div>
+        <i>原因を追う</i>
+        <div>
+          <b>3. 次に調べる場所</b>
+          <span>{example.trace}</span>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -703,7 +736,7 @@ function OwnershipMap() {
       <header>
         <span className="eyebrow">Layer x ownership</span>
         <h2>AOSP標準とOEM差分を、変更する場所で分ける</h2>
-        <p>縦にstack、横に変更方法を置く。右へ進むほど製品固有の追加、下へ進むほどvehicle契約に近い。</p>
+        <p>縦は変更対象の深さ、横は実装方法。たとえば「色変更」は上段のRRO、「新しい車両値の追加」は下段のOEM実装を見る。</p>
       </header>
       <div className="ownership-grid">
         <b className="ownership-head">Layer</b>
@@ -738,7 +771,7 @@ function FileMap() {
       <PageHero
         kicker="File linkage"
         title="どのファイルがどこと紐づくか"
-        text="Android projectはActivityだけ追うと迷子になる。AAOSはXML resource, Manager API, Car Service, VHAL, permission allowlistをセットで読む。"
+        text="まず画面で変えたい箇所を決め、XML resourceやActivityを確認する。車両値を読む処理に出会った段階でCarPropertyManager、Car Service、VHALへ進む。"
       />
       <div className="filter-row filter-row--page">
         {[
@@ -832,16 +865,12 @@ function ReadOrder() {
   return (
     <section className="wide-card">
       <h2>標準appを読む順番</h2>
-      <div className="flowline">
-        <span>AndroidManifest.xml</span>
-        <b />
-        <span>res/xml or res/layout</span>
-        <b />
-        <span>Controller / Activity</span>
-        <b />
-        <span>Manager API</span>
-        <b />
-        <span>Car Service / VHAL</span>
+      <p className="read-order-intro">例: Car Settingsで「温度単位」の項目を探し、選択後に車両値の処理まで必要になった場合。</p>
+      <div className="read-order">
+        <div><b>1 見える項目</b><code>res/xml/*.xml</code><small>設定項目が存在するか</small></div>
+        <div><b>2 押した時の動作</b><code>PreferenceController</code><small>選択をどう処理するか</small></div>
+        <div><b>3 車両値が必要な時だけ</b><code>CarPropertyManager</code><small>propertyを読む窓口</small></div>
+        <div><b>4 実機で確認</b><code>Car Service / VHAL</code><small>supportされる値と設定</small></div>
       </div>
     </section>
   );
@@ -853,7 +882,7 @@ function Figures({ cats, filter, figures: shown, onFilter, picks, onPick, onRetr
       <PageHero
         kicker="Visual guide"
         title="layer、owner、実画面を一枚につなげる"
-        text="小さい単語図は統合し、AOSP standard / OEM差分 / Vehicle contractと、Official IVI画面・file/APIの対応を大きな図で読む。"
+        text="図には必ず観点を付ける。AOSP standard / OEM差分 / 車両データ定義、Official IVI画面、変更時に辿るfile/APIを具体例と一緒に読む。"
       />
       <div className="filter-row filter-row--page">
         {cats.map((cat) => (
@@ -938,6 +967,7 @@ function RichFigure({ kind }) {
         ["Car Service", "permission + dispatch", "supported config"],
         ["App layer", "CarPropertyManager", "Subscribe -> State -> UI"],
       ],
+      arrows: ["value event", "Androidへ公開", "Subscribe callback"],
       note: "Read/writeとは別に、変化する値は Subscribe のpathで画面へ戻る。",
     },
     decision: {
@@ -945,9 +975,10 @@ function RichFigure({ kind }) {
         ["Color / icon", "res/values・drawable", "RROを第一候補"],
         ["Bar placement", "CarSystemUI resource", "RRO or SystemUI config"],
         ["Screen behavior", "Activity / Controller", "App source extension"],
-        ["New vehicle data", "Car Service / VHAL", "vendor contract"],
+        ["New vehicle data", "Car Service / VHAL", "vendor property定義・config"],
       ],
-      note: "変更要求を表層からvehicle契約へ分類すると、不要なplatform forkを避けやすい。",
+      arrows: ["見た目だけで足りない時", "位置だけで足りない時", "新しい値が必要な時"],
+      note: "例: ブランド色はRRO、新しいseat sensor値はVHAL側のproperty定義とconfigを確認する。",
     },
     mediaFlow: {
       lanes: [
@@ -956,6 +987,7 @@ function RichFigure({ kind }) {
         ["Media template", "共通のvehicle UI", "browse / playback controls"],
         ["System policy", "UX Restrictions", "driving中の操作制限"],
       ],
+      arrows: ["serviceを公開", "sourceを選択", "安全制限を適用"],
       note: "MediaBrowserServiceは一語の箱ではなく、source appが公開するServiceとして読む。",
     },
     workflow: {
@@ -965,6 +997,7 @@ function RichFigure({ kind }) {
         ["Modify", "RRO / App / Service / VHAL", "変更場所を選択"],
         ["Verify", "Build -> Emulator -> ADB", "behaviorとpermission"],
       ],
+      arrows: ["ownerを決める", "変更場所を決める", "動作を確認する"],
       note: "このサイトの学習順を、実際のAOSP確認フローへ接続する。",
     },
   };
@@ -979,7 +1012,7 @@ function RichFigure({ kind }) {
             <b>{body}</b>
             <small>{detail}</small>
           </div>
-          {index < diagram.lanes.length - 1 && <i>↓</i>}
+          {index < diagram.lanes.length - 1 && <i>↓ {diagram.arrows[index]}</i>}
         </React.Fragment>
       ))}
       <p>{diagram.note}</p>

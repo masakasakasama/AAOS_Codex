@@ -1,7 +1,15 @@
+const lessonMinutes = {
+  p1: 5, p2: 7, p3: 6, p3b: 5, p4: 7, p5: 6, p6: 7, p7: 6,
+  b1: 7, b2: 6, b3: 7, b4: 7, b5: 8, b6: 8, b7: 7, b8: 7, b9: 7, b10: 8,
+  i1: 10, i2: 9, i3: 10, i4: 8, i5: 10, i6: 9, i7: 7, i8: 8,
+  i9: 9, i10: 9, i11: 7, i12: 9, i13: 9, i14: 9, i15: 7, i16: 10,
+  a1: 11, a2: 12, a3: 11, a4: 10, a5: 9, a6: 8, a7: 9, a8: 10, a9: 9, a10: 12,
+};
+
 const lesson = (id, title, minutes, summary, points, extra = {}) => ({
   id,
   title,
-  minutes,
+  minutes: lessonMinutes[id] ?? minutes,
   summary,
   points,
   ...extra,
@@ -81,7 +89,7 @@ export const curriculum = [
     id: "foundation",
     label: "前提",
     title: "Android未経験から入る",
-    duration: "約 120 分 / 8 lessons",
+    duration: "約 50 分 / 8 lessons",
     goal:
       "プログラミングやAndroidを知らなくても、画面、file、code、APIという言葉を見失わずにAAOSの入口へ立てるようにする。",
     modules: [
@@ -126,15 +134,15 @@ export const curriculum = [
         lessons: [
           lesson(
             "p3",
-            "Activity / Service / Manifest / resource",
+            "画面を1枚作る: Activity と resource",
             17,
-            "Androidの説明で必ず出る4語を、車載特有の話へ進む前に固める。",
+            "最初は画面の入口と、文字や色の置き場所だけに絞る。Serviceや車両APIはまだ扱わない。",
             [
-              "`Activity` はユーザーに見えるscreenの入口。",
-              "`Service` は画面の裏で接続や再生などを担えるcomponent。",
-              "`Manifest` はcomponentとpermissionをsystemへ知らせ、`resource` は差し替え可能な見た目を持つ。",
+              "`Activity` はユーザーに見えるscreenを表示する入口。",
+              "`resource` は文字、色、余白、画像など見た目の材料。",
+              "例ではスマホの設定画面のタイトル色を変え、どのfileが表示に効くかだけ確認する。",
             ],
-            { figure: "grid", terms: ["Activity", "Service", "Manifest", "resource"] }
+            { terms: ["Activity", "resource", "res/layout", "res/values"] }
           ),
           lesson(
             "p3b",
@@ -150,37 +158,35 @@ export const curriculum = [
           ),
           lesson(
             "p4",
-            "Kotlinの読み方: 変数、関数、callback",
+            "ボタンを押すと変わる: Kotlinの最小形",
             16,
-            "全部書けなくても、AAOSのsample codeを読むための最低限の形を掴む。",
+            "画面に出す値を持ち、ボタンを押した時に文字を更新するcodeだけ読む。",
             [
               "`val` は値に名前を付ける。`fun` は処理のまとまり。",
-              "callbackは『値が変わったらこの処理を呼んで』と登録する仕組み。",
-              "後で車速やHVAC値が変わった瞬間に画面を更新するコードへ繋がる。",
+              "最初の例は『+ ボタンで設定温度の表示が22.0Cから22.5Cになる』。",
+              "外から値が届く `callback` は初級のproperty例で初めて接続する。",
             ],
             {
-              figure: "binder",
               code: `val temperature = 22.0f
 
 fun showTemperature(value: Float) {
     temperatureText.text = "$value C"
 }
 
-// 値が来たら呼ばれる処理
-val callback = { value: Float -> showTemperature(value) }`,
+showTemperature(22.5f) // + buttonを押した後の表示`,
             }
           ),
           lesson(
             "p5",
-            "API と permission",
+            "permission: カメラを使う許可",
             14,
-            "APIは他の機能へ依頼する窓口、permissionはその窓口を誰が使えるかの条件。",
+            "まずスマホのカメラ例で『使う前に許可が必要な機能がある』ことを掴む。",
             [
-              "地図や音楽の操作と、空調やドア制御では許される範囲が違う。",
-              "AAOSでは車両値へ触るAPIにpermissionやPrivileged条件が絡む。",
-              "まず『呼びたいAPI』『必要なpermission』『使える配備方式』を分けて読む。",
+              "写真を撮る画面を作っても、camera permissionなしではcameraを開けない。",
+              "`AndroidManifest.xml` に必要なpermissionを書く例から始める。",
+              "車両制御のより強いpermissionやPrivilegedは中級で、必要になった時に扱う。",
             ],
-            { figure: "gate", terms: ["API", "permission", "Privileged"] }
+            { terms: ["permission", "AndroidManifest.xml"] }
           ),
         ],
       },
@@ -227,9 +233,9 @@ val callback = { value: Float -> showTemperature(value) }`,
     id: "beginner",
     label: "初級",
     title: "AAOSを画面から理解する",
-    duration: "約 150 分 / 10 lessons",
+    duration: "約 75 分 / 10 lessons",
     goal:
-      "まずIVIで起きる変化を見てから、App / SystemUI / Car API / VHALの名前と関係を説明できるようにする。",
+      "まずIVIの画面と操作を見て、値や見た目の変化を説明する。必要になった段階でproperty、CarPropertyManager、VHALへ順番に進む。",
     modules: [
       {
         title: "01. 車載Androidの入口",
@@ -256,36 +262,34 @@ val callback = { value: Float -> showTemperature(value) }`,
           ),
           lesson(
             "b2",
-            "ECU / Network / IVI / Cluster",
+            "IVIの領域: Navigation / Media / Cluster / HVAC",
             16,
-            "車両は複数のECUとnetworkの集合で、IVIはVHALを通して必要な情報を受け取る。",
+            "まず画面に見えている4領域を区別し、それぞれで起きる変化をSimulatorで確かめる。",
             [
-              "ECUは空調、ボディ、パワートレインなどの制御単位。",
-              "IVIはアプリを載せるrich display、Clusterは走行情報を重視するdisplayとして捉える。",
-              "同じ速度propertyでも表示先と要求品質は同じとは限らない。",
+              "Navigationは経路案内、Mediaは再生、Clusterはspeed/gear、HVACは空調操作を見せる。",
+              "例: gearをRにするとNavigation領域がRear camera表示へ切り替わる。",
+              "この時点では内部名を暗記せず、『操作に対しどの領域が変わるか』に集中する。",
             ],
             {
-              figure: "network",
-              terms: ["ECU", "VHAL", "Cluster"],
+              terms: ["IVI", "Navigation", "Media", "Cluster", "HVAC"],
               tryId: "gear-reverse",
             }
           ),
           lesson(
             "b3",
-            "5層で読む: AppからVehicleまで",
+            "値の名前を付ける: temperature / speed / gear",
             17,
-            "ファイルを探すときの地図は App -> Car API -> Car Service -> VHAL -> Vehicle/Emulator。",
+            "画面で観察した温度・速度・gearを、車載Androidが扱う値 `property` として呼ぶ。",
             [
-              "UI/XMLの変更はまずAppまたはSystemUIの層に現れる。",
-              "Manager API呼び出しはBinderを越えてCar Serviceへ届く。",
-              "property定義やsupport状況はVHAL側の契約とconfigへ行き着く。",
+              "例: driver温度表示の元になる値を `HVAC_TEMPERATURE_SET` として扱う。",
+              "propertyには『読み取りだけか』『設定できるか』『座席ごとか』という設定がある。",
+              "どの値が使えるかは、後でVHAL側のproperty定義とconfigで確認する。",
             ],
             {
-              figure: "stack",
               files: [
-                ["android.car.*", "packages/services/Car/car-lib", "アプリが使うclient API"],
-                ["Car Service", "packages/services/Car/service", "permissionやdispatchを担うservice群"],
-                ["Vehicle AIDL", "hardware/interfaces/automotive/vehicle/aidl", "property契約"],
+                ["HVAC_TEMPERATURE_SET", "driver temperature", "22.0C -> 26.0Cの表示変化"],
+                ["GEAR_SELECTION", "Rear camera表示", "P -> Rで切替"],
+                ["property config", "supported / area / min-max", "実装で使える値か確認"],
               ],
             }
           ),
@@ -305,23 +309,22 @@ val callback = { value: Float -> showTemperature(value) }`,
               "HVACとRadioはVehicle/API接続を直感的に追うための良い題材。",
             ],
             {
-              figure: "grid",
+              official: officialVisuals.aaosHome,
               tryId: "media-source",
               terms: ["Launcher", "CarSystemUI", "Car Settings", "Media"],
             }
           ),
           lesson(
             "b5",
-            "Car.createCar と Manager の入口",
+            "CarPropertyManager: propertyを読むcodeの入口",
             18,
-            "アプリは `Car` 経由で目的別のManagerを取得し、車両機能にアクセスする。",
+            "b3で名前を付けたpropertyを、アプリのcodeがどう取得するかをここで初めて読む。",
             [
-              "`CarPropertyManager` はpropertyのread / write / Subscribeの窓口。",
-              "APIが見えてもpermissionとproperty supportがなければ操作は成立しない。",
-              "接続のlifecycleはActivity/Serviceのlifecycleに合わせて管理する。",
+              "`CarPropertyManager` はpropertyをread / write / SubscribeするためのAndroid側の窓口。",
+              "例: 温度設定ボタンを押したら `HVAC_TEMPERATURE_SET` をwriteする。",
+              "codeを書いても、permissionや対象propertyのsupport設定がなければ動かない。",
             ],
             {
-              figure: "binder",
               code: `val car = Car.createCar(context)
 val manager = car.getCarManager(Car.PROPERTY_SERVICE)
         as CarPropertyManager
@@ -381,7 +384,7 @@ car.disconnect()`,
               "Media / Dialer / HVAC / Radioは機能ごとの理解に適したサイズ。",
               "このサイトのAOSP Assets表は公開sourceのHEADからres数を実測している。",
             ],
-            { figure: "pyramid", terms: ["AOSP assets", "RRO", "Reuse"] }
+            { terms: ["AOSP assets", "RRO", "Reuse"] }
           ),
           lesson(
             "b9",
@@ -394,7 +397,7 @@ car.disconnect()`,
               "`cmd car_service` のcommand構文はバージョン差があるため、対象buildのhelpで確認する。",
               "SimulatorのCode Bridgeは『何を検証すべきか』のガイドとして使う。",
             ],
-            { figure: "terminal", tryId: "vhal-hvac-temp" }
+            { tryId: "vhal-hvac-temp" }
           ),
           lesson(
             "b10",
@@ -406,7 +409,7 @@ car.disconnect()`,
               "色・icon・resource差はRRO向き、車両feature差はproperty/config側へ整理する。",
               "メーカー事例は『AOSP標準をそのまま使う』と断言せず、差分の置き場を考える教材にする。",
             ],
-            { figure: "oem", tryId: "rro-accent", terms: ["Google built-in", "OEM UI"] }
+            { tryId: "rro-accent", terms: ["Google built-in", "OEM UI"] }
           ),
         ],
       },
@@ -416,9 +419,9 @@ car.disconnect()`,
     id: "intermediate",
     label: "中級",
     title: "App layerからServiceへ辿る",
-    duration: "約 240 分 / 16 lessons",
+    duration: "約 140 分 / 16 lessons",
     goal:
-      "標準アプリのXMLとManager APIを読み、permission・RRO・audio・displayまでの実装判断ができるようにする。",
+      "初級で触れたCarPropertyManagerを実装として読み、標準アプリのXML、permission、RRO、audio、displayまで判断できるようにする。",
     modules: [
       {
         title: "01. Property実装",
@@ -474,7 +477,7 @@ car.disconnect()`,
           ], { figure: "layers", tryId: "systemui-bars" }),
           lesson("i9", "Car Settings: Preference XML + Controller", 14, "設定画面は静的XMLとbusiness logic controllerを行き来して読む。", [
             "`res/xml` のPreferenceから `settings:controller` を追う。",
-            "Manager APIを呼ぶ箇所はController側で探す。",
+            "車両値が必要な設定なら、Controller側でCarPropertyManager呼び出しを探す。",
           ], { official: officialVisuals.settingsComponents, tryId: "settings-controller" }),
           lesson("i10", "Media: MediaBrowserServiceとtemplate", 15, "media source appと車向け共通UIを分離して理解する。", [
             "source発見はMediaBrowserServiceのservice宣言が入口。",
@@ -517,7 +520,7 @@ car.disconnect()`,
     id: "advanced",
     label: "上級",
     title: "AOSP integrationを判断する",
-    duration: "約 170 分 / 10 lessons",
+    duration: "約 105 分 / 10 lessons",
     goal:
       "AOSP標準assetの利用を前提に、Service/VHAL/build/validationまで含むOEM設計レビューができるようにする。",
     modules: [
@@ -528,9 +531,9 @@ car.disconnect()`,
             "client APIとservice実装を同一ファイル群だと思わない。",
             "`CarPropertyService` とHAL bridgeの責務を分けて読む。",
           ], { figure: "stack" }),
-          lesson("a2", "AIDL VHALとvendor property", 20, "Android 13以降のVHALはAIDLが中心。OEM固有propertyの契約とconfigを設計する。", [
+          lesson("a2", "AIDL VHALとvendor property", 20, "Android 13以降のVHALはAIDLが中心。OEM固有propertyの定義とconfigを設計する。", [
             "標準propertyとvendor extensionを衝突させない。",
-            "support、area、access、change modeを契約として明示する。",
+            "support、area、access、change modeをproperty定義とconfigに明示する。",
           ], { figure: "pipe" }),
           lesson("a3", "Property追加のend-to-end trace", 17, "HVAC setを例に、AppからECU/Emulatorとcallback帰還まで説明する。", [
             "permission checkとvalue validationを抜かさない。",
@@ -580,6 +583,161 @@ car.disconnect()`,
   },
 ];
 
+export const lessonExamples = {
+  p1: {
+    title: "スマホの時計領域と設定アプリを見分ける",
+    context: "スマホ画面の上端はOS側、本文はApp側という最初の見分け方。",
+    action: "Settingsアプリを開く。",
+    visible: "本文は切り替わるが、上端の時刻・battery領域は残る。",
+    trace: "Official画像のStatus barとApp contentの注釈を見る。",
+  },
+  p2: {
+    title: "タイトル色だけを青から橙へ変える",
+    context: "見た目の変更と動作変更をfile単位で分ける例。",
+    action: "`colors.xml` のtitle colorを変更する。",
+    visible: "画面のタイトル色だけが変わり、押した時の動作は同じ。",
+    trace: "`res/values/colors.xml` と参照するlayout。",
+  },
+  p3: {
+    title: "温度設定の小さな画面を表示する",
+    context: "最初に覚えるのは画面の入口と見た目の材料だけ。",
+    action: "Temperature Activityを起動する。",
+    visible: "`22.0 C` と `+` buttonが表示される。",
+    trace: "`Activity` と `res/layout` / `res/values`。",
+  },
+  p3b: {
+    title: "下端の操作領域を比べる",
+    context: "スマホのgesture handleと車の常設HVAC barは用途が異なる。",
+    action: "スマホ画像とOfficial IVI画像の下端を見る。",
+    visible: "スマホはnavigation、車は温度操作などが常時見える。",
+    trace: "`System UI` / `CarSystemUI` が持つ領域。",
+  },
+  p4: {
+    title: "温度の + buttonを押す",
+    context: "Kotlinを、画面変化が発生する最小例で読む。",
+    action: "`+` を押して `showTemperature(22.5f)` を実行する。",
+    visible: "表示が `22.0 C` から `22.5 C` へ変わる。",
+    trace: "`MainActivity.kt` のclick処理と表示更新関数。",
+  },
+  p5: {
+    title: "カメラを初めて開く",
+    context: "permissionは車の話に入る前にスマホで理解できる。",
+    action: "cameraを使う画面を開く。",
+    visible: "許可dialogが出て、拒否するとpreviewが出ない。",
+    trace: "`AndroidManifest.xml` のcamera permission。",
+  },
+  p6: {
+    title: "編集したアプリをemulatorで見る",
+    context: "file変更が画面になるまでの工程を一往復する。",
+    action: "buildしてAPKをemulatorへinstallする。",
+    visible: "編集したタイトル色や温度画面がemulatorに現れる。",
+    trace: "Gradle build、APK、ADB installの順。",
+  },
+  p7: {
+    title: "Google Mapsを投影するか、車にinstallするか",
+    context: "Android AutoとAAOSを混同しないための比較。",
+    action: "Phone接続の投影と車載Home上のアプリ起動を比べる。",
+    visible: "投影はPhone由来、AAOSは車載OS上で画面が動く。",
+    trace: "Android Auto / AAOS / IVI の役割差。",
+  },
+  b1: {
+    title: "Official Home画面の温度領域を見つける",
+    context: "実画面から、車両値に関係しそうな領域を探す。",
+    action: "Official IVI画像の下端温度表示を見る。",
+    visible: "左右の温度操作がHome上に常設されている。",
+    trace: "HVAC表示から後続のtemperature propertyへ進む。",
+  },
+  b2: {
+    title: "PからRへ切り替えてRear cameraを出す",
+    context: "内部用語より先に、操作と変化の関係を体で掴む。",
+    action: "Simulatorで `GEAR_SELECTION = REVERSE` をApply。",
+    visible: "Navigation領域がRear camera surfaceへ切り替わる。",
+    trace: "変わった領域はCluster/Navigation、値の名前は次lessonで扱う。",
+  },
+  b3: {
+    title: "driver温度を22.0Cから26.0Cへ変える",
+    context: "画面に出る値へ `property` という名前を与える。",
+    action: "`HVAC_TEMPERATURE_SET` を26.0にする。",
+    visible: "HVAC stripのDRIVER表示が26.0Cになる。",
+    trace: "property名、seat area、supported min/max config。",
+  },
+  b4: {
+    title: "Home画面の領域から標準appを推定する",
+    context: "ownerを当ててからsourceを読むための練習。",
+    action: "Official IVIで地図、bar、media cardを指差す。",
+    visible: "Home/Media/System領域が同じ画面内に共存する。",
+    trace: "Launcher、CarSystemUI、MediaのAOSP source候補。",
+  },
+  b5: {
+    title: "温度設定をcodeからwriteする",
+    context: "propertyを知った後で、初めてcodeの窓口を導入する。",
+    action: "温度buttonから `CarPropertyManager` に設定値を渡す。",
+    visible: "設定されたtemperatureがHVAC表示に反映される。",
+    trace: "`Car.createCar` と `CarPropertyManager`。",
+  },
+  b6: {
+    title: "ブランド色を橙へ差し替える",
+    context: "処理を変えずに見た目だけOEM差分にする例。",
+    action: "Simulatorでaccent colorのRRO scenarioをApply。",
+    visible: "buttonや強調色が一括で変わる。",
+    trace: "`res/values`、`overlayable.xml`、overlay APK。",
+  },
+  b7: {
+    title: "走行中に長い設定操作を止める",
+    context: "安全制限は実際に止まる画面で読む。",
+    action: "Simulatorで走行中scenarioをApply。",
+    visible: "操作を制限する表示になり、必要な車両controlsは残る。",
+    trace: "UX Restrictions stateとDriving Optimized対応。",
+  },
+  b8: {
+    title: "Homeの見た目変更をどのrepoから始めるか",
+    context: "ゼロ実装よりAOSP標準assetを先に読む判断。",
+    action: "LauncherとCarSystemUIのasset量を表で比較する。",
+    visible: "Home/cardかbarかで読むsource候補が分かれる。",
+    trace: "`packages/apps/Car/Launcher` と `CarSystemUI`。",
+  },
+  b9: {
+    title: "Simulatorの温度変更をAAOS emulatorでも確認する",
+    context: "教材の再現と本物の検証を分ける。",
+    action: "対象buildのemulatorを起動してADBで状態を確認する。",
+    visible: "実際の対象versionのUIと挙動を確認できる。",
+    trace: "Automotive emulator、ADB、対象buildのhelp。",
+  },
+  b10: {
+    title: "Polestar 3の画面でOEMらしさを探す",
+    context: "公開されているメーカー例を断定せず観察する。",
+    action: "公式紹介のinterfaceとAOSP例を見比べる。",
+    visible: "brand表現や体験差があってもAAOS採用は両立する。",
+    trace: "公開情報で確認できる範囲と、実装推測を分離する。",
+  },
+  i1: { title: "走行速度を画面へ継続表示する", context: "値が変わり続ける場合の受取り方。", action: "speed propertyをSubscribeする。", visible: "速度の変化に合わせて表示が更新される。", trace: "`subscribePropertyEvents` とcallback。" },
+  i2: { title: "左右seatの温度範囲を出し分ける", context: "property configをUI設計に使う。", action: "seat areaとmin/maxを読む。", visible: "設定可能範囲外のbuttonを出さない。", trace: "area / access / changeMode config。" },
+  i3: { title: "運転席だけ温度を上げる", context: "seat単位propertyとpermissionの例。", action: "driver areaへtemperatureを書込む。", visible: "DRIVER表示だけが変わる。", trace: "HVAC property、areaId、write permission。" },
+  i4: { title: "走行開始で検索入力を無効化する", context: "制限をUI requirementとして扱う。", action: "restriction変更を受ける。", visible: "検索入力は止まり、再生操作は残る。", trace: "CarUxRestrictionsManagerとDO要件。" },
+  i5: { title: "system bar iconの色を変更する", context: "RROで済む差分の判定。", action: "overlay APKで許可されたresourceを上書きする。", visible: "icon色だけが変わる。", trace: "target package / overlayable / resource。" },
+  i6: { title: "通常APKからdoor lockを触ろうとする", context: "許可されない操作でSecurityを読む。", action: "制御APIをpermissionなしで呼ぶ。", visible: "操作は成功しない。", trace: "permission、Privileged allowlist、署名条件。" },
+  i7: { title: "画面を閉じたら速度更新を止める", context: "不要なSubscribeを残さない。", action: "画面終了時にunsubscribeする。", visible: "非表示画面が更新され続けない。", trace: "lifecycleとcallback解除。" },
+  i8: { title: "bottom barをleft barへ変える", context: "App外の常設領域を扱う。", action: "CarSystemUIのbar配置設定を変更する。", visible: "操作barの置き場所が変わる。", trace: "CarSystemUI resource / window behavior。" },
+  i9: { title: "Car SettingsにWi-Fi項目を表示する", context: "XMLとlogicを往復して読む。", action: "Preference項目を選ぶ。", visible: "設定項目が表示され状態を反映する。", trace: "`res/xml` と `PreferenceController`。" },
+  i10: { title: "Spotify sourceを車載Media画面に出す", context: "source appと共通UIの分担例。", action: "Media sourceを選択する。", visible: "車向けtemplateに曲とcontrolsが表示される。", trace: "`MediaBrowserService` とMedia template。" },
+  i11: { title: "Homeのrecent media cardから再生へ戻る", context: "Launcherが入口になる例。", action: "Home cardを押す。", visible: "Media画面へ移動する。", trace: "Launcher card resourceと起動intent。" },
+  i12: { title: "phone callとHVACで依存先を比べる", context: "機能別appの読み分け。", action: "Dialerと温度操作を比較する。", visible: "一方はphone連携、他方はvehicle値が中心。", trace: "Bluetooth/Contacts と HVAC property。" },
+  i13: { title: "Navigation案内中だけ音楽を下げる", context: "audio duckingの例。", action: "案内音声scenarioをApply。", visible: "Mediaは止まらず音量が下がる。", trace: "audio usage / zone / ducking config。" },
+  i14: { title: "助手席displayに別contentを出す", context: "occupant zoneの例。", action: "Passenger user/displayを割り当てる。", visible: "運転席と別の画面内容になる。", trace: "user / occupant zone / display mapping。" },
+  i15: { title: "トンネルでnight themeへ変える", context: "stateとresourceの違いを見る。", action: "night-mode scenarioをApply。", visible: "暗い配色に切り替わる。", trace: "NIGHT_MODE event と night resource。" },
+  i16: { title: "色変更とseat温度追加を別分類する", context: "中級の設計判断練習。", action: "二つの変更依頼を分類する。", visible: "色はRRO、値はproperty対応に分かれる。", trace: "変更別のsource pathと検証方法。" },
+  a1: { title: "speed eventがAppへ戻る経路を追う", context: "Service内部traceの例。", action: "speed eventを発生させる。", visible: "UI速度表示が更新される。", trace: "Car Service dispatchとSubscribe処理。" },
+  a2: { title: "OEM固有seat sensor値を追加する", context: "vendor property追加の例。", action: "新しいsensor値の利用を設計する。", visible: "対応車種だけ新表示を出せる。", trace: "AIDL VHAL property定義とconfig。" },
+  a3: { title: "HVAC setを往路と復路で検証する", context: "end-to-end確認。", action: "温度をwriteしeventを受ける。", visible: "操作後の確定値で表示が更新される。", trace: "permission / validation / Subscribe。" },
+  a4: { title: "OEM overlayをsystem imageへ載せる", context: "build integrationの例。", action: "overlay packageをproductへ追加する。", visible: "起動時からブランド色が反映される。", trace: "product packagesとRRO同梱。" },
+  a5: { title: "駐車後にmaintenanceを実行する", context: "電源制御の例。", action: "Garage Modeで更新jobを実行する。", visible: "利用者不在時に処理し終了する。", trace: "power policyとGarage Mode。" },
+  a6: { title: "reverse時の表示をログと画面で照合する", context: "検証手順の例。", action: "gear scenarioをemulatorで再現する。", visible: "Rear camera表示へ切り替わる。", trace: "ADB / dumpsys / 画面記録。" },
+  a7: { title: "VHAL変更後に互換性確認を計画する", context: "動作と互換性を分ける。", action: "vendor interface変更をレビューする。", visible: "機能動作だけでは完了扱いにしない。", trace: "対象範囲のCTS/VTS確認。" },
+  a8: { title: "同platformで2車種のHVAC差を持つ", context: "variant管理の例。", action: "seat構成差をconfig化する。", visible: "対応車種だけ後席controlsを表示する。", trace: "resource / property support / config。" },
+  a9: { title: "Media prebuiltを製品imageへ統合する", context: "unbundled appの例。", action: "配布APKを組み込む。", visible: "Media surfaceが利用可能になる。", trace: "unbundled apps integration docs。" },
+  a10: { title: "4件の変更依頼をreviewする", context: "最終演習の具体例。", action: "色、後席audio、新値、走行中検索を分類する。", visible: "それぞれ別の変更場所と検証項目になる。", trace: "official docs / source path / emulator確認。" },
+};
+
 export const architectureLayers = [
   {
     layer: "1. App / SystemUI",
@@ -604,7 +762,7 @@ export const architectureLayers = [
   },
   {
     layer: "4. VHAL",
-    role: "Androidと車両実装のvehicle property契約。",
+    role: "Androidへ公開するvehicle propertyの定義と対応状況。",
     elements: "IVehicle.aidl, VehicleProperty, configs, default implementation",
     paths: ["hardware/interfaces/automotive/vehicle/aidl/"],
     question: "propertyはsupportされ、どのarea/access/change modeか？",
@@ -712,7 +870,7 @@ export const assetStrategy = [
   {
     group: "基盤へ降りる",
     apps: "android.car / Car Service / VHAL",
-    reason: "Appの挙動をpermission、event dispatch、vehicle contractへ接続する。",
+    reason: "Appの挙動をpermission、event dispatch、vehicle property定義へ接続する。",
   },
 ];
 
@@ -735,11 +893,11 @@ export const ownershipMatrix = [
     layer: "Car API / Services",
     default: "android.car managers / Car Service policy",
     configure: "permission allowlist, audio/power/user config",
-    extend: "platform service change only when contract demands it",
+    extend: "platform service change only when property behavior needs it",
     files: "packages/services/Car/* / sysconfig",
   },
   {
-    layer: "Vehicle contract",
+    layer: "Vehicle data definition",
     default: "standard VehicleProperty / AIDL VHAL interface",
     configure: "supported property, area, access, min/max",
     extend: "vendor property / ECU adapter implementation",

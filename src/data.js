@@ -91,7 +91,7 @@ export const sources = [
     note: "AOSPをsyncする公式手順。android-latest-release manifestの利用を説明。",
   },
   {
-    label: "CarPropertyManager API",
+    label: "CarPropertyManager official reference",
     url: "https://developer.android.com/reference/android/car/hardware/property/CarPropertyManager",
     note: "Vehicle specific propertiesへのアプリ向けinterface。registerCallbackはdeprecatedで、subscribePropertyEventsを使う。",
   },
@@ -417,14 +417,14 @@ export const appFocus = [
 ];
 
 export const figures = [
-  { id: "f01", cat: "architecture", title: "AAOS ownership map: AOSP standard / OEM差分 / Vehicle", kind: "ownership", text: "縦がlayer、横がownership。見た目の変更がRROで済むのか、Service/VHALへ降りるのかを一枚で判断する。" },
-  { id: "f02", cat: "ivi", title: "Official IVI anatomy: 画面からownerを読む", kind: "officialIvi", text: "現行Android Developers掲載のAAOS emulator画面。表示領域からLauncher/SystemUI/HVAC/アプリcontentの切り分けへ進む。" },
-  { id: "f03", cat: "property", title: "Vehicle property: Subscribeして画面へ反映", kind: "subscribe", text: "値の生成からUI更新までを一本に統合。UIはCarPropertyManagerでeventをSubscribeし、Service/VHALの契約へ辿る。" },
+  { id: "f01", cat: "architecture", title: "AAOS ownership map: AOSP standard / OEM差分 / Vehicle", kind: "ownership", text: "例: ブランド色変更はVisible surfaces x OEM configure、新しいseat sensor値はVehicle data definition x OEM extendを見る。" },
+  { id: "f02", cat: "ivi", title: "Official IVI anatomy: 画面からownerを読む", kind: "officialIvi", text: "例: Official Home画面の下端温度表示をHVAC、地図contentをnavigation app、常設領域をSystemUIとして切り分ける。" },
+  { id: "f03", cat: "property", title: "Vehicle property: Subscribeして画面へ反映", kind: "subscribe", text: "例: speed値が変わると表示が更新される。UIはCarPropertyManagerでeventをSubscribeし、Service/VHALのproperty定義とconfigへ辿る。" },
   { id: "f04", cat: "customize", title: "見た目変更の判断: resource / RRO / source / VHAL", kind: "decision", text: "『色を変える』『barを動かす』『新しい車両値を出す』を同じ変更として扱わない。" },
-  { id: "f05", cat: "apps", title: "Car Settings: XMLからController/APIへ", kind: "officialSettings", text: "AOSP公式component diagramに注釈を付け、XMLとlogicの紐付きだけを集中して読む。" },
-  { id: "f06", cat: "safety", title: "UX Restrictions: Official blocked screen", kind: "officialUx", text: "走行中に止まる画面をOfficial例で見る。App側は走行状態を推測せずrestrictionを扱う。" },
-  { id: "f07", cat: "media", title: "Media: source serviceと車載templateの分担", kind: "mediaFlow", text: "長い名前を押し込まず、source app / discover / template / surfaceの役割で読む。" },
-  { id: "f08", cat: "workflow", title: "AOSP assetから実機検証まで", kind: "workflow", text: "標準assetを読むことから、変更、build、emulator/ADB検証までの学習経路を統合する。" },
+  { id: "f05", cat: "apps", title: "Car Settings: XMLからController/APIへ", kind: "officialSettings", text: "例: 設定項目を押した時、`res/xml` の項目から処理を持つControllerへ辿るためのOfficial component図。" },
+  { id: "f06", cat: "safety", title: "UX Restrictions: Official blocked screen", kind: "officialUx", text: "例: 走行開始後に長い設定操作を止める。App側は推測でなくrestriction stateを扱う。" },
+  { id: "f07", cat: "media", title: "Media: source serviceと車載templateの分担", kind: "mediaFlow", text: "例: Spotifyのcatalog/playback stateをsource appが公開し、車載templateが共通UIとして表示する。" },
+  { id: "f08", cat: "workflow", title: "AOSP assetから実機検証まで", kind: "workflow", text: "例: Homeの色を変える依頼で、owner特定、RRO変更、build、emulator確認までを進める。" },
 ];
 
 export const quiz = {
