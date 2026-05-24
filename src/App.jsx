@@ -12,9 +12,10 @@ import {
 import {
   apiCatalog,
   architectureLayers,
-  assetStrategy,
   curriculum,
   glossary,
+  officialVisuals,
+  ownershipMatrix,
 } from "./curriculum.js";
 
 const tabs = [
@@ -291,8 +292,9 @@ function IVI({ state }) {
               {state.mediaIcon === "oem" ? "OEM" : "♪"}
             </div>
             <div className="track">
-              <h3>Drive - Lofi Trio</h3>
-              <p>MediaBrowserService source</p>
+              <small className="track-source">NOW PLAYING / SPOTIFY</small>
+              <h3>Night Drive</h3>
+              <p>Lofi Trio · MediaBrowserService</p>
               <div className="progress">
                 <span style={{ width: state.navDucking ? "28%" : "42%" }} />
               </div>
@@ -327,8 +329,8 @@ function IVI({ state }) {
             <span className={state.night ? "is-on" : ""}>NIGHT</span>
           </div>
           <div className="outside">
-            <span>Outside</span>
-            <b>18C</b>
+            <span>Outside / Range</span>
+            <b>18C · 286 km</b>
           </div>
         </section>
       </div>
@@ -351,10 +353,18 @@ function IVI({ state }) {
           <span className={state.ac ? "on" : ""}>A/C</span>
           <span className={state.recirc ? "on" : ""}>RECIRC</span>
           <span>DEFROST</span>
+          <span>AUTO</span>
         </div>
         <div className="temp">
           <small>PASSENGER</small>
           <b>{state.passengerTemp.toFixed(1)}C</b>
+        </div>
+        <div className="quick-dock">
+          <span>HOME</span>
+          <span>NAV</span>
+          <span>MEDIA</span>
+          <span>PHONE</span>
+          <span>APPS</span>
         </div>
       </div>
     </div>
@@ -383,14 +393,18 @@ function Map({ nav }) {
   return (
     <div className="map">
       <svg viewBox="0 0 420 260" preserveAspectRatio="none">
+        <path className="street" d="M-10 36 L430 210 M80 -15 L145 280 M300 -15 L235 280" />
         <path d="M-20 220 C110 140 130 50 240 20 C315 0 360 40 440 10" />
         <path d="M-30 60 C70 120 160 120 230 190 C280 240 350 230 450 170" />
         <circle cx="235" cy="150" r="8" />
       </svg>
-      {nav && <span className="nav-chip">Turn right in 200m</span>}
+      <div className="map-search">Where to?</div>
+      <span className="poi poi--charge">EV</span>
+      <span className="poi poi--coffee">Cafe</span>
+      {nav && <span className="nav-chip">Turn right · 200 m</span>}
       <div className="eta">
         <b>12 min</b>
-        <span>8.4 km / expressway</span>
+        <span>8.4 km · ETA 10:54</span>
       </div>
     </div>
   );
@@ -466,7 +480,7 @@ function Courses({ onTry }) {
       <PageHero
         kicker="Structured curriculum"
         title="画面で理解し、fileを追い、設計判断まで進む"
-        text="Android未経験者向けの前提7 lessonsから入り、初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
+        text="Android smartphoneでSystem UIとAppの境界を読む前提8 lessonsから入り、初級10、中級16、上級10の順に、App layerを軸としてCar Service / VHAL / AOSP integrationへ降りていく。"
       />
       <div className="course-selector">
         {curriculum.map((item) => (
@@ -631,24 +645,16 @@ function Assets({ totals }) {
     <main className="page">
       <PageHero
         kicker="AOSP standard assets"
-        title="まずAOSP標準assetを使い倒す"
-        text="標準アプリは単なるサンプルではなく、XML・drawable・Controller・permission・build定義の教材。実測値を見て、どのrepoから読むか決める。"
+        title="AOSP standardとOEM差分の置き場所を先に決める"
+        text="まずlayer x ownership mapで変更先を判断し、その後に実測した標準appのasset量から読むrepoを選ぶ。"
       />
+      <OwnershipMap />
       <div className="stat-row">
         <Stat label="res files" value={totals.res} />
         <Stat label="layout" value={totals.layout} />
         <Stat label="drawable" value={totals.drawable} />
         <Stat label="xml" value={totals.xml} />
         <Stat label="source" value={totals.source} />
-      </div>
-      <div className="strategy-grid">
-        {assetStrategy.map((item) => (
-          <article key={item.group} className="strategy-card">
-            <span className="eyebrow">{item.group}</span>
-            <h2>{item.apps}</h2>
-            <p>{item.reason}</p>
-          </article>
-        ))}
       </div>
       <div className="table-wrap">
         <table>
@@ -688,6 +694,40 @@ function Assets({ totals }) {
       </div>
       <p className="footnote">{factMeta.branchNote}</p>
     </main>
+  );
+}
+
+function OwnershipMap() {
+  return (
+    <section className="ownership-card">
+      <header>
+        <span className="eyebrow">Layer x ownership</span>
+        <h2>AOSP標準とOEM差分を、変更する場所で分ける</h2>
+        <p>縦にstack、横に変更方法を置く。右へ進むほど製品固有の追加、下へ進むほどvehicle契約に近い。</p>
+      </header>
+      <div className="ownership-grid">
+        <b className="ownership-head">Layer</b>
+        <b className="ownership-head ownership-head--aosp">AOSP standard / まず再利用</b>
+        <b className="ownership-head ownership-head--rro">OEM configure / RRO・config</b>
+        <b className="ownership-head ownership-head--oem">OEM extend / 追加実装</b>
+        {ownershipMatrix.map((row) => (
+          <React.Fragment key={row.layer}>
+            <div className="ownership-layer">
+              <strong>{row.layer}</strong>
+              <code>{row.files}</code>
+            </div>
+            <div className="ownership-cell ownership-cell--aosp">{row.default}</div>
+            <div className="ownership-cell ownership-cell--rro">{row.configure}</div>
+            <div className="ownership-cell ownership-cell--oem">{row.extend}</div>
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="ownership-legend">
+        <span className="legend-aosp">AOSP: source/referenceを確認</span>
+        <span className="legend-rro">OEM: resource/config差分</span>
+        <span className="legend-oem">OEM: code/VHAL追加</span>
+      </div>
+    </section>
   );
 }
 
@@ -812,8 +852,8 @@ function Figures({ cats, filter, figures: shown, onFilter, picks, onPick, onRetr
     <main className="page page--figures">
       <PageHero
         kicker="Visual guide"
-        title="図解で先に頭へ入れる"
-        text="初級コースでも使えるように、抽象概念を小さなSVGで大量に並べた。カードごとに1つだけ覚えればよい。"
+        title="layer、owner、実画面を一枚につなげる"
+        text="小さい単語図は統合し、AOSP standard / OEM差分 / Vehicle contractと、Official IVI画面・file/APIの対応を大きな図で読む。"
       />
       <div className="filter-row filter-row--page">
         {cats.map((cat) => (
@@ -822,7 +862,7 @@ function Figures({ cats, filter, figures: shown, onFilter, picks, onPick, onRetr
           </button>
         ))}
       </div>
-      <div className="figure-grid">
+      <div className="figure-grid figure-grid--integrated">
         {shown.map((figure) => (
           <FigureCard
             key={figure.id}
@@ -846,7 +886,7 @@ function FigureCard({ figure, pick, onPick, onRetry }) {
         <h3>{figure.title}</h3>
         <span className={catClass(figure.cat)}>{figure.cat}</span>
       </header>
-      <FigureSvg kind={figure.kind} />
+      <RichFigure kind={figure.kind} />
       <p>{figure.text}</p>
       {q && (
         <div className="quiz">
@@ -884,6 +924,69 @@ function FigureCard({ figure, pick, onPick, onRetry }) {
   );
 }
 
+function RichFigure({ kind }) {
+  if (kind === "officialIvi") return <OfficialVisual visual={officialVisuals.aaosHome} />;
+  if (kind === "officialSettings") return <OfficialVisual visual={officialVisuals.settingsComponents} />;
+  if (kind === "officialUx") return <OfficialVisual visual={officialVisuals.blockedActivity} />;
+  if (kind === "ownership") return <OwnershipMap />;
+
+  const diagrams = {
+    subscribe: {
+      lanes: [
+        ["Vehicle / Emulator", "ECU value changes", "HVAC_TEMP / SPEED"],
+        ["VHAL", "AIDL IVehicle event", "property + areaId + status"],
+        ["Car Service", "permission + dispatch", "supported config"],
+        ["App layer", "CarPropertyManager", "Subscribe -> State -> UI"],
+      ],
+      note: "Read/writeとは別に、変化する値は Subscribe のpathで画面へ戻る。",
+    },
+    decision: {
+      lanes: [
+        ["Color / icon", "res/values・drawable", "RROを第一候補"],
+        ["Bar placement", "CarSystemUI resource", "RRO or SystemUI config"],
+        ["Screen behavior", "Activity / Controller", "App source extension"],
+        ["New vehicle data", "Car Service / VHAL", "vendor contract"],
+      ],
+      note: "変更要求を表層からvehicle契約へ分類すると、不要なplatform forkを避けやすい。",
+    },
+    mediaFlow: {
+      lanes: [
+        ["Media source app", "MediaBrowserService", "catalog / playback state"],
+        ["Launcher", "serviceをdiscover", "sourceを選択"],
+        ["Media template", "共通のvehicle UI", "browse / playback controls"],
+        ["System policy", "UX Restrictions", "driving中の操作制限"],
+      ],
+      note: "MediaBrowserServiceは一語の箱ではなく、source appが公開するServiceとして読む。",
+    },
+    workflow: {
+      lanes: [
+        ["Observe", "Official IVI / AOSP app", "ownerを特定"],
+        ["Trace", "XML -> Controller -> Manager", "file linkage"],
+        ["Modify", "RRO / App / Service / VHAL", "変更場所を選択"],
+        ["Verify", "Build -> Emulator -> ADB", "behaviorとpermission"],
+      ],
+      note: "このサイトの学習順を、実際のAOSP確認フローへ接続する。",
+    },
+  };
+  const diagram = diagrams[kind];
+  if (!diagram) return <FigureSvg kind={kind} />;
+  return (
+    <div className={`integrated-diagram integrated-diagram--${kind}`}>
+      {diagram.lanes.map(([label, body, detail], index) => (
+        <React.Fragment key={label}>
+          <div className="diagram-block">
+            <span>{label}</span>
+            <b>{body}</b>
+            <small>{detail}</small>
+          </div>
+          {index < diagram.lanes.length - 1 && <i>↓</i>}
+        </React.Fragment>
+      ))}
+      <p>{diagram.note}</p>
+    </div>
+  );
+}
+
 function FigureSvg({ kind }) {
   const labels = {
     boundary: ["Phone app", "Projection", "Car display"],
@@ -907,6 +1010,29 @@ function FigureSvg({ kind }) {
     seats: ["Driver", "Passenger", "Rear L", "Rear R"],
   };
   const list = labels[kind] ?? labels.pipe;
+  if (kind === "media") {
+    return (
+      <svg className="fig-svg" viewBox="0 0 360 220" role="img" aria-label="media source flow">
+        <rect x="1" y="1" width="358" height="218" rx="16" />
+        {[
+          ["Launcher", ""],
+          ["MediaBrowser", "Service"],
+          ["Media", "Template"],
+        ].map(([first, second], index) => {
+          const x = 20 + index * 114;
+          return (
+            <g key={first}>
+              <rect x={x} y="65" width="96" height="62" rx="10" />
+              <text x={x + 48} y={second ? 90 : 101} textAnchor="middle">{first}</text>
+              {second && <text x={x + 48} y="108" textAnchor="middle">{second}</text>}
+              {index < 2 && <path d={`M${x + 96} 96 L${x + 114} 96`} />}
+            </g>
+          );
+        })}
+          <text x="180" y="160" textAnchor="middle">{"source discovery -> shared vehicle UI"}</text>
+      </svg>
+    );
+  }
   return (
     <svg className="fig-svg" viewBox="0 0 360 190" role="img" aria-label={kind}>
       <defs>

@@ -67,9 +67,12 @@ pre {
   display: flex;
   align-items: center;
   gap: 18px;
+  min-width: 0;
   padding: 0 18px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, .035), transparent);
+  background-color: #101318;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .035), transparent);
+  backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -115,6 +118,8 @@ pre {
 
 .tabs {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   gap: 4px;
   padding: 3px;
   border: 1px solid var(--line);
@@ -173,6 +178,7 @@ pre {
   min-height: 0;
   display: grid;
   grid-template-columns: 320px minmax(500px, 1fr) 360px;
+  align-items: start;
 }
 
 .side {
@@ -343,7 +349,8 @@ pre {
 .stage {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(420px, 1fr) auto;
+  grid-template-rows: auto clamp(440px, 52vw, 590px) auto;
+  align-self: start;
   gap: 12px;
   padding: 18px;
 }
@@ -407,7 +414,7 @@ pre {
 .ivi {
   min-height: 0;
   display: grid;
-  grid-template-rows: 38px 1fr 58px;
+  grid-template-rows: 38px 1fr auto;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 15px;
@@ -516,6 +523,12 @@ pre {
   display: block;
 }
 
+.map .street {
+  stroke: rgba(255,255,255,.08);
+  stroke-width: 4;
+  stroke-linecap: square;
+}
+
 .map path {
   fill: none;
   stroke: #273d5a;
@@ -534,12 +547,43 @@ pre {
 
 .nav-chip,
 .eta,
-.rear span {
+.rear span,
+.map-search,
+.poi {
   position: absolute;
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 8px;
   background: rgba(0, 0, 0, .5);
   backdrop-filter: blur(8px);
+}
+
+.map-search {
+  top: 12px;
+  left: 12px;
+  padding: 7px 12px;
+  color: #e1e7ef;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.poi {
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.poi--charge {
+  left: 58%;
+  top: 41%;
+  background: #087e62;
+}
+
+.poi--coffee {
+  right: 18%;
+  top: 63%;
+  background: #9b632f;
 }
 
 .nav-chip {
@@ -611,11 +655,22 @@ pre {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(135deg, #5b3aa0, #c45a8c);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.42), transparent 16%),
+    linear-gradient(135deg, #163950, #c45a8c 62%, #f08052);
   color: #fff;
   font-size: 36px;
   font-weight: 900;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .42);
+}
+
+.track-source {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .12em;
 }
 
 .cover--oem {
@@ -633,6 +688,7 @@ pre {
   margin: 0;
   color: #9aa6b6;
   font-size: 11.5px;
+  overflow-wrap: anywhere;
 }
 
 .progress {
@@ -786,6 +842,25 @@ pre {
   background: rgba(0, 0, 0, .26);
 }
 
+.quick-dock {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.quick-dock span {
+  border-radius: 8px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,.045);
+  color: #8e9bac;
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .temp {
   display: grid;
   gap: 2px;
@@ -912,6 +987,7 @@ pre {
 }
 
 .page {
+  min-width: 0;
   overflow: auto;
   padding: 24px;
 }
@@ -1416,6 +1492,108 @@ pre {
   margin: 0 0 18px;
 }
 
+.ownership-card {
+  margin: 0 0 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--panel) 92%, black);
+}
+
+.ownership-card header h2 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+}
+
+.ownership-card header p {
+  margin: 0 0 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.ownership-grid {
+  display: grid;
+  grid-template-columns: minmax(170px, .85fr) repeat(3, minmax(190px, 1fr));
+  gap: 7px;
+}
+
+.ownership-head {
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  background: #0e1218;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ownership-head--aosp { color: #7fd495; }
+.ownership-head--rro { color: #ffb454; }
+.ownership-head--oem { color: #8ec5ff; }
+
+.ownership-layer,
+.ownership-cell {
+  border-radius: 9px;
+  padding: 11px;
+  min-height: 72px;
+}
+
+.ownership-layer {
+  display: grid;
+  gap: 6px;
+  background: #11161d;
+}
+
+.ownership-layer strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.ownership-layer code {
+  color: var(--text-mute);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.ownership-cell {
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.ownership-cell--aosp {
+  border: 1px solid rgba(127,212,149,.3);
+  background: rgba(127,212,149,.06);
+}
+
+.ownership-cell--rro {
+  border: 1px solid rgba(255,180,84,.32);
+  background: rgba(255,180,84,.06);
+}
+
+.ownership-cell--oem {
+  border: 1px solid rgba(142,197,255,.32);
+  background: rgba(142,197,255,.06);
+}
+
+.ownership-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.ownership-legend span {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.legend-aosp { color: #7fd495; background: rgba(127,212,149,.1); }
+.legend-rro { color: #ffb454; background: rgba(255,180,84,.1); }
+.legend-oem { color: #8ec5ff; background: rgba(142,197,255,.1); }
+
 .strategy-card h2 {
   font-size: 15px;
 }
@@ -1595,6 +1773,72 @@ td:first-child {
   gap: 10px;
 }
 
+.figure-grid--integrated {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+}
+
+.figure-grid--integrated .figure-card:has(.ownership-card),
+.figure-grid--integrated .figure-card:has(.official-visual) {
+  grid-column: 1 / -1;
+}
+
+.figure-card .ownership-card {
+  margin: 0;
+  padding: 13px;
+}
+
+.integrated-diagram {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  background: #0b0f15;
+}
+
+.diagram-block {
+  display: grid;
+  grid-template-columns: minmax(112px, .7fr) minmax(140px, 1fr) minmax(160px, 1.2fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  padding: 10px;
+  background: var(--panel-2);
+}
+
+.diagram-block span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.diagram-block b {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.diagram-block small {
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.integrated-diagram i {
+  color: var(--accent);
+  font-size: 14px;
+  font-style: normal;
+  text-align: center;
+}
+
+.integrated-diagram > p {
+  margin: 4px 0 0;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 10px;
+}
+
 .figure-card header {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -1739,6 +1983,20 @@ td:first-child {
     grid-template-columns: 300px 1fr;
   }
 
+  .media-card {
+    grid-template-columns: 78px 1fr;
+    gap: 8px;
+  }
+
+  .cover {
+    width: 78px;
+    height: 78px;
+  }
+
+  .controls {
+    gap: 4px;
+  }
+
   .curriculum-shell,
   .lesson-content {
     grid-template-columns: 1fr;
@@ -1754,6 +2012,11 @@ td:first-child {
 
   .strategy-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ownership-grid {
+    grid-template-columns: 160px repeat(3, minmax(165px, 1fr));
+    overflow-x: auto;
   }
 
   .side--right {
@@ -1772,6 +2035,7 @@ td:first-child {
     align-items: stretch;
     flex-wrap: wrap;
     padding: 10px;
+    overflow: hidden;
   }
 
   .brand {
@@ -1781,6 +2045,10 @@ td:first-child {
   .tabs {
     order: 3;
     width: 100%;
+  }
+
+  .page {
+    padding: 16px;
   }
 
   .sim-grid,
@@ -1835,5 +2103,43 @@ td:first-child {
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 10px 16px;
+  }
+
+  .quick-dock {
+    display: flex;
+  }
+
+  .ownership-grid {
+    display: block;
+  }
+
+  .ownership-head {
+    display: none;
+  }
+
+  .ownership-layer {
+    margin-top: 12px;
+  }
+
+  .ownership-cell {
+    margin-top: 5px;
+  }
+
+  .ownership-cell--aosp::before,
+  .ownership-cell--rro::before,
+  .ownership-cell--oem::before {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .ownership-cell--aosp::before { content: "AOSP STANDARD"; color: #7fd495; }
+  .ownership-cell--rro::before { content: "OEM CONFIGURE"; color: #ffb454; }
+  .ownership-cell--oem::before { content: "OEM EXTEND"; color: #8ec5ff; }
+
+  .diagram-block {
+    grid-template-columns: 1fr;
+    gap: 5px;
   }
 }

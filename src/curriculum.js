@@ -7,7 +7,31 @@ const lesson = (id, title, minutes, summary, points, extra = {}) => ({
   ...extra,
 });
 
-const officialVisuals = {
+export const officialVisuals = {
+  mobileStatus: {
+    file: "mobile-status-bar.png",
+    alt: "Android smartphone status bar region highlighted in Android Developers guidance",
+    title: "Official: Android smartphoneのStatus bar",
+    source: "https://developer.android.com/design/ui/mobile/guides/foundations/system-bars",
+    sourceLabel: "Android Developers: Android system bars / Figure 2",
+    versionNote: "現行Mobile guidanceはAndroid 15のedge-to-edge挙動も説明している。ここではAppとSystem UIの境界を読む。",
+    markers: [
+      { x: 50, y: 26, label: "Status bar / System UI", note: "時刻、notification、batteryなど。アプリが自由に所有するcontentではない。" },
+      { x: 49, y: 72, label: "App content", note: "Toolbarや本文はアプリ側。layout/resource/codeの変更対象になる。" },
+    ],
+  },
+  mobileNavigation: {
+    file: "mobile-navigation-bar.png",
+    alt: "Android smartphone gesture navigation handle shown in Android Developers guidance",
+    title: "Official: Android smartphoneのNavigation bar",
+    source: "https://developer.android.com/design/ui/mobile/guides/foundations/system-bars",
+    sourceLabel: "Android Developers: Android system bars / Figure 7",
+    versionNote: "スマホではgesture handleなどがApp外のnavigation affordanceになる。AAOSではbar配置や常設vehicle controlsがさらに異なる。",
+    markers: [
+      { x: 26, y: 78, label: "Gesture handle", note: "ユーザーがsystem navigationへ戻る領域。contentを隠さないようInsetsを扱う。" },
+      { x: 77, y: 75, label: "Adaptive navigation", note: "画面幅に応じてApp navigationが変わる例。System barとは区別する。" },
+    ],
+  },
   aaosHome: {
     file: "android-automotive-os.png",
     alt: "Android Automotive OS emulator home screen shown in Android Developers documentation",
@@ -57,7 +81,7 @@ export const curriculum = [
     id: "foundation",
     label: "前提",
     title: "Android未経験から入る",
-    duration: "約 105 分 / 7 lessons",
+    duration: "約 120 分 / 8 lessons",
     goal:
       "プログラミングやAndroidを知らなくても、画面、file、code、APIという言葉を見失わずにAAOSの入口へ立てるようにする。",
     modules: [
@@ -68,13 +92,13 @@ export const curriculum = [
             "p1",
             "アプリ、OS、画面の違い",
             12,
-            "画面に見えているものを、OS全体と一つのアプリに分けて考えるところから始める。",
+            "まず見慣れたAndroid smartphoneで、Appが描く領域とSystem UIの領域を分けて見る。",
             [
               "OSはアプリを動かし、permissionや画面切替を管理する土台。",
               "アプリは特定の目的の画面と処理を持つ。設定、音楽、地図は別のアプリになり得る。",
               "車ではアプリの周囲にsystem barやclimate操作のような常設領域がある。",
             ],
-            { figure: "layers", terms: ["OS", "App", "System UI"] }
+            { official: officialVisuals.mobileStatus, terms: ["OS", "App", "System UI", "Status bar"] }
           ),
           lesson(
             "p2",
@@ -111,6 +135,18 @@ export const curriculum = [
               "`Manifest` はcomponentとpermissionをsystemへ知らせ、`resource` は差し替え可能な見た目を持つ。",
             ],
             { figure: "grid", terms: ["Activity", "Service", "Manifest", "resource"] }
+          ),
+          lesson(
+            "p3b",
+            "スマホのNavigationとAAOSの常設bar",
+            12,
+            "スマホのgesture navigationを起点に、車でbarやclimate操作が常時残る意味を比較する。",
+            [
+              "スマホではgesture handleやnavigation barがApp contentの外側にある。",
+              "AAOSではOEMがsystem bar配置を変えたり、climate controlを常時アクセス可能にすることがある。",
+              "Appを作る時はSystem UIと重ならないlayout、車載側ではdriver distractionも考える。",
+            ],
+            { official: officialVisuals.mobileNavigation, terms: ["Navigation bar", "WindowInsets", "CarSystemUI"] }
           ),
           lesson(
             "p4",
@@ -280,7 +316,7 @@ val callback = { value: Float -> showTemperature(value) }`,
             18,
             "アプリは `Car` 経由で目的別のManagerを取得し、車両機能にアクセスする。",
             [
-              "`CarPropertyManager` はpropertyのread / write / subscriptionの窓口。",
+              "`CarPropertyManager` はpropertyのread / write / Subscribeの窓口。",
               "APIが見えてもpermissionとproperty supportがなければ操作は成立しない。",
               "接続のlifecycleはActivity/Serviceのlifecycleに合わせて管理する。",
             ],
@@ -331,7 +367,7 @@ car.disconnect()`,
             [
               "文字入力、複雑なsetup、長いbrowseはrestriction対象になりやすい。",
               "Play/Pauseなど許容される操作と混同しない。",
-              "アプリはrestriction stateを購読してUIを更新する。",
+              "アプリはrestriction stateをSubscribeしてUIを更新する。",
             ],
             { official: officialVisuals.blockedActivity, tryId: "ux-driving", terms: ["DO", "UX Restrictions"] }
           ),
@@ -387,7 +423,7 @@ car.disconnect()`,
       {
         title: "01. Property実装",
         lessons: [
-          lesson("i1", "CarPropertyManager: read / write / subscribe", 18, "値の取得・設定・変更購読を使い分ける。連続値はsubscriptionで受ける。", [
+          lesson("i1", "CarPropertyManager: read / write / Subscribe", 18, "値の取得・設定・Subscribeを使い分ける。連続値はSubscribeで受ける。", [
             "`get*Property` は単発read、`set*Property` はwrite。",
             "新規コードでは `subscribePropertyEvents` / `unsubscribePropertyEvents` を中心に確認する。",
             "callbackで受ける `CarPropertyValue` はstatusとtimestampも見る。",
@@ -399,7 +435,7 @@ car.disconnect()`,
           lesson("i2", "property anatomy: id / area / access / changeMode", 16, "propertyは名前だけでなくarea、access、change modeをセットで読む。", [
             "GLOBAL propertyのareaIdとSEAT/ZONE propertyを分ける。",
             "READ / WRITE / READ_WRITEにより許される操作が異なる。",
-            "STATIC / ON_CHANGE / CONTINUOUSで購読方法やUI更新頻度が変わる。",
+            "STATIC / ON_CHANGE / CONTINUOUSでSubscribe方法やUI更新頻度が変わる。",
           ], { figure: "seats", tryId: "vhal-fan-speed" }),
           lesson("i3", "HVAC: seat area と permission", 17, "HVACはseatごとに値を持つwrite可能propertyとpermissionの典型例。", [
             "`HVAC_TEMPERATURE_SET` と `HVAC_FAN_SPEED` のarea/configを読む。",
@@ -423,7 +459,7 @@ car.disconnect()`,
             "manifest declarationだけで十分とは限らない。",
             "Privileged app allowlistやplatform signingの必要性を対象APIごとに確認する。",
           ], { figure: "gate", tryId: "priv-permission" }),
-          lesson("i7", "lifecycle と callback解除", 12, "画面が見えていない間もsubscriptionを残さない。thread境界も意識する。", [
+          lesson("i7", "lifecycle と callback解除", 12, "画面が見えていない間もSubscribeを残さない。thread境界も意識する。", [
             "登録と解除を対で設計する。",
             "UI更新は適切なthread/state管理へ渡す。",
           ], { figure: "binder" }),
@@ -488,7 +524,7 @@ car.disconnect()`,
       {
         title: "01. Platform内部",
         lessons: [
-          lesson("a1", "Car Service内部: BinderからHAL dispatchへ", 18, "Managerの先にあるservice側でpermission、subscription、HAL接続を追う。", [
+          lesson("a1", "Car Service内部: BinderからHAL dispatchへ", 18, "Managerの先にあるservice側でpermission、Subscribe、HAL接続を追う。", [
             "client APIとservice実装を同一ファイル群だと思わない。",
             "`CarPropertyService` とHAL bridgeの責務を分けて読む。",
           ], { figure: "stack" }),
@@ -498,7 +534,7 @@ car.disconnect()`,
           ], { figure: "pipe" }),
           lesson("a3", "Property追加のend-to-end trace", 17, "HVAC setを例に、AppからECU/Emulatorとcallback帰還まで説明する。", [
             "permission checkとvalue validationを抜かさない。",
-            "UI反映はchange event購読側へ帰る経路で確認する。",
+            "UI反映はchange eventのSubscribe側へ帰る経路で確認する。",
           ], { figure: "pipe", tryId: "vhal-hvac-temp" }),
         ],
       },
@@ -561,7 +597,7 @@ export const architectureLayers = [
   },
   {
     layer: "3. Car Service",
-    role: "permission、policy、subscription、service orchestration。",
+    role: "permission、policy、Subscribe、service orchestration。",
     elements: "CarPropertyService, CarAudioService, power/user related services",
     paths: ["packages/services/Car/service/src/com/android/car/"],
     question: "誰がpermissionを検査し、イベントを配るか？",
@@ -596,11 +632,11 @@ car.disconnect()`,
     chain: ["App", "Car client API", "Binder", "Car Service"],
   },
   {
-    title: "車速を購読する",
+    title: "車速をSubscribeする",
     api: "CarPropertyManager.subscribePropertyEvents(...)",
     property: "VehiclePropertyIds.PERF_VEHICLE_SPEED",
     access: "READ / CONTINUOUS / GLOBAL",
-    detail: "連続値はpollingせずevent subscriptionでUIへ渡す。valueのunitとstatusを確認する。",
+    detail: "連続値はpollingせずeventをSubscribeしてUIへ渡す。valueのunitとstatusを確認する。",
     code: `manager.subscribePropertyEvents(
     VehiclePropertyIds.PERF_VEHICLE_SPEED,
     CarPropertyManager.SENSOR_RATE_UI,
@@ -677,5 +713,36 @@ export const assetStrategy = [
     group: "基盤へ降りる",
     apps: "android.car / Car Service / VHAL",
     reason: "Appの挙動をpermission、event dispatch、vehicle contractへ接続する。",
+  },
+];
+
+export const ownershipMatrix = [
+  {
+    layer: "Visible surfaces",
+    default: "Launcher / Media / Car Settings / CarSystemUI",
+    configure: "theme colors, icon, dimension, bar position via RRO/config",
+    extend: "brand Home, custom HVAC surface, passenger experience",
+    files: "packages/apps/Car/* / res/* / overlay APK",
+  },
+  {
+    layer: "App behavior",
+    default: "PreferenceController / Media service integration",
+    configure: "enabled preference, DO config, source ordering",
+    extend: "OEM feature Activity / Service / controller logic",
+    files: "AndroidManifest.xml / *Controller / service declaration",
+  },
+  {
+    layer: "Car API / Services",
+    default: "android.car managers / Car Service policy",
+    configure: "permission allowlist, audio/power/user config",
+    extend: "platform service change only when contract demands it",
+    files: "packages/services/Car/* / sysconfig",
+  },
+  {
+    layer: "Vehicle contract",
+    default: "standard VehicleProperty / AIDL VHAL interface",
+    configure: "supported property, area, access, min/max",
+    extend: "vendor property / ECU adapter implementation",
+    files: "hardware/interfaces/automotive/vehicle/aidl / vendor",
   },
 ];
